@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getCountryWorkspace } from '@/lib/analyst/service';
+import { apiJson, notFound, requiredStringParam, withApiErrorHandling } from '@/lib/api/http';
 
-export async function GET(request: NextRequest) {
-  const code = String(request.nextUrl.searchParams.get('code') || '').trim();
-  if (!code) return NextResponse.json({ error: 'code is required' }, { status: 400 });
-
+export const GET = withApiErrorHandling(async (request: NextRequest) => {
+  const code = requiredStringParam(request, 'code');
   const data = await getCountryWorkspace(code);
-  if (!data) return NextResponse.json({ error: 'not found' }, { status: 404 });
-  return NextResponse.json(data);
-}
+  if (!data) throw notFound();
+
+  return apiJson(data);
+});

@@ -31,6 +31,8 @@
 - `stance`
 - `relevanceScore` — степень релевантности
 - `whyIncluded` — почему элемент попал в ленту
+- `confidence` — уверенность алгоритма (0..1)
+- `evidence` — список оснований (ID/маркеры источников)
 
 ## 4) Текущая реализация
 
@@ -39,9 +41,15 @@
   - `buildNarrativeTimeline(...)`
 
 - API:
-  - `GET /api/analyst/country?code=...`
-  - `GET /api/analyst/case?narrativeId=...`
-  - `GET /api/analyst/entity?entity=...&countries=...`
+  - Backward-compatible:
+    - `GET /api/analyst/country?code=...`
+    - `GET /api/analyst/case?narrativeId=...`
+    - `GET /api/analyst/entity?entity=...&countries=...`
+  - Unified analyst endpoints:
+    - `GET /api/analyst/timeline?scope=country|narrative|entity&...`
+    - `GET /api/analyst/graph?scope=country|narrative|entity&...`
+    - `GET /api/analyst/query?scope=country|narrative|entity&...`
+    - `GET /api/analyst/explain?scope=country|narrative|entity&...`
 
 ## 5) UX-правила
 

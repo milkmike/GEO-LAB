@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
 import { getTriageData } from '@/lib/analyst/service';
+import { apiJson, withApiErrorHandlingNoRequest } from '@/lib/api/http';
 
-export async function GET() {
+export const GET = withApiErrorHandlingNoRequest(async () => {
   const data = await getTriageData();
-  return NextResponse.json(data);
-}
+  return apiJson(data);
+});

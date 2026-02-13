@@ -8,6 +8,8 @@
 - `PLAIN_LANGUAGE_SPEC.md` — правила простого языка и UX-понятности
 - `docs/lab/architecture.md` — базовая архитектура репозитория и release-контур
 - `docs/lab/WAVE_1_IMPLEMENTATION.md` — что именно реализовано в Wave 1 (infra/graph/workbench), как проверять и что дальше
+- `docs/api/openapi.analyst.yaml` — OpenAPI-контракт analyst endpoints (Wave-2 / S3-REL)
+- `docs/api/examples/` — эталонные JSON-ответы analyst endpoints
 
 ## Что уже есть
 
@@ -18,6 +20,7 @@
   - `GET /api/admin/graph-health`
 - Канонические сущности `person/org/place/event`
 - Рёбра с `confidence`, `evidence`, `validFrom/validTo`
+- Analyst API (timeline/graph/query/explain) с explainability-полями `whyIncluded`, `relevanceScore`, `confidence`, `evidence`
 
 ## Примеры
 
@@ -25,6 +28,13 @@
 curl 'http://localhost:3000/api/admin/graph-health'
 curl 'http://localhost:3000/api/graph/neighbors?nodeId=narrative:2'
 curl 'http://localhost:3000/api/graph/subgraph?nodeId=narrative:2&depth=2'
+
+# analyst endpoints
+curl 'http://localhost:3000/api/analyst/triage'
+curl 'http://localhost:3000/api/analyst/case?narrativeId=2'
+curl 'http://localhost:3000/api/analyst/brief?narrativeId=2'
+curl 'http://localhost:3000/api/analyst/country?code=KZ'
+curl 'http://localhost:3000/api/analyst/entity?entity=%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F&countries=KZ,BY'
 ```
 
 ## Запуск
