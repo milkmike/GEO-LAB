@@ -155,20 +155,20 @@
     @apply text-[11px] uppercase tracking-[0.14em] text-zinc-400;
   }
 
-  /* Typography system: only 3 text sizes (ratio x1.8 per level) */
+  /* Typography system: only 3 text sizes (calmer reading mode) */
   .t-meta {
-    font-size: 10px;
-    line-height: 14px;
+    font-size: 11px;
+    line-height: 16px;
   }
 
   .t-body {
-    font-size: 18px; /* 10 * 1.8 */
-    line-height: 24px;
+    font-size: 14px;
+    line-height: 20px;
   }
 
   .t-display {
-    font-size: 32px; /* 18 * 1.8 ≈ 32 */
-    line-height: 38px;
+    font-size: 20px;
+    line-height: 28px;
     font-weight: 600;
   }
 }
