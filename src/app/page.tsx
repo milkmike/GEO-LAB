@@ -25,12 +25,12 @@ function GraphHealthBadge() {
   }, []);
 
   if (!health) {
-    return <span className="g-chip text-zinc-500">graph: ...</span>;
+    return <span className="g-chip text-zinc-500">Состояние системы: проверка…</span>;
   }
 
   return (
     <span className={`g-chip ${health.status === 'ok' ? 'text-green-300 border-green-500/40' : 'text-yellow-300 border-yellow-500/40'}`}>
-      graph: {health.status} · {health.entities}N/{health.edges}E
+      {health.status === 'ok' ? 'Система: всё стабильно' : 'Система: есть нюансы'}
     </span>
   );
 }
@@ -75,7 +75,7 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
 
   if (!triage) {
     return (
-      <div className="px-4 py-3 text-sm text-zinc-500">Loading signal deck...</div>
+      <div className="px-4 py-3 text-sm text-zinc-500">Подбираю главную тему…</div>
     );
   }
 
@@ -88,27 +88,27 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
     <div className={`${landing ? 'p-6 md:p-10' : 'px-4 py-2 border-b border-zinc-800 bg-zinc-950/70'}`}>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-3">
-          <div className="g-kicker">Signal Deck</div>
-          <div className="text-xs text-zinc-500">quality: {triage.quality.status} · aliases {triage.quality.aliasConflicts}</div>
+          <div className="g-kicker">Главная повестка</div>
+          <div className="text-xs text-zinc-500">Качество данных: {triage.quality.status === 'ok' ? 'нормально' : 'нужно проверить'} · спорных совпадений: {triage.quality.aliasConflicts}</div>
         </div>
 
         <div className="rounded-2xl g-panel-strong p-5 mb-3">
-          <div className="g-kicker mb-1">Main signal · escalation {hero.divergence}%</div>
+          <div className="g-kicker mb-1">Главная тема · уровень споров {hero.divergence}%</div>
           <h2 className="text-2xl md:text-3xl font-semibold text-white mb-2">{hero.title}</h2>
-          <p className="text-sm text-zinc-400 mb-4">Главный кейс для старта аналитики: открой кейс и проверь timeline, actors, evidence.</p>
+          <p className="text-sm text-zinc-400 mb-4">Это лучший сюжет для старта: открой и посмотри кто участвует, что произошло и на чём основаны выводы.</p>
           <div className="flex gap-2">
             <button
               onClick={() => navigate('Narrative', hero.narrativeId, { relation: 'signal_deck_open_case', fromType: 'Country', fromId: hero.countries[0] || 'N/A' })}
               className="px-3 py-2 rounded-lg bg-cyan-300/90 text-black text-sm font-medium hover:bg-cyan-200"
             >
-              Open case
+Открыть сюжет
             </button>
             {next[0] && (
               <button
                 onClick={() => navigate('Narrative', next[0].narrativeId, { relation: 'signal_deck_next_case', fromType: 'Country', fromId: next[0].countries[0] || 'N/A' })}
                 className="px-3 py-2 rounded-lg bg-zinc-900 text-zinc-200 text-sm border border-zinc-700 hover:border-cyan-600"
               >
-                Open next signal
+Открыть следующий сюжет
               </button>
             )}
           </div>
@@ -123,7 +123,7 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
             >
               <div className="text-xs text-orange-300 mb-1">{item.divergence}%</div>
               <div className="text-sm text-white line-clamp-2">{item.title}</div>
-              <div className="text-xs text-zinc-500 mt-1">case #{item.narrativeId}</div>
+              <div className="text-xs text-zinc-500 mt-1">Сюжет №{item.narrativeId}</div>
             </button>
           ))}
         </div>
@@ -150,9 +150,9 @@ function ActiveCaseHeader() {
 
   return (
     <div className="sticky top-0 z-10 mb-3 rounded-xl g-panel px-3 py-2">
-      <div className="text-xs text-zinc-500">Active Case</div>
+      <div className="text-xs text-zinc-500">Открытый сюжет</div>
       <div className="text-sm text-white font-semibold line-clamp-1">{n.titleRu}</div>
-      <div className="text-xs text-zinc-500">{countryLabels} · divergence {n.divergenceScore}%</div>
+      <div className="text-xs text-zinc-500">{countryLabels} · уровень споров {n.divergenceScore}%</div>
     </div>
   );
 }
@@ -172,20 +172,20 @@ export default function Home() {
         <span className="text-2xl">🐙</span>
         <div>
           <h1 className="text-lg font-bold text-white">GeoPulse Lab</h1>
-          <p className="text-xs text-zinc-500">Ontology Graph · Прототип связей виджетов</p>
+          <p className="text-xs text-zinc-500">Панель геополитики простыми словами</p>
         </div>
         <div className="ml-auto flex items-center gap-3 text-xs text-zinc-500">
           {state.focus && (
             <button
               onClick={() => setLeftCollapsed((v) => !v)}
               className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-              title="Toggle left panel"
+              title="Показать или скрыть левую панель"
             >
-              {leftCollapsed ? '☰ Show rail' : '☰ Hide rail'}
+              {leftCollapsed ? '☰ Показать панель стран' : '☰ Скрыть панель стран'}
             </button>
           )}
-          <span className="g-chip">🧬 Ontology v1</span>
-          <span className="g-chip">8 стран · 5 сюжетов · 10 статей</span>
+          <span className="g-chip">🧬 База связей v1</span>
+          <span className="g-chip">8 стран · 5 главных сюжетов</span>
           <GraphHealthBadge />
         </div>
       </header>

@@ -31,15 +31,29 @@ function StanceBadge({ stance }: { stance: string }) {
     anti_russia: 'bg-orange-500/20 text-orange-300',
   };
   const labels: Record<string, string> = {
-    pro_russia: '🇷🇺 Pro',
-    neutral: '⚖️ Neutral',
-    anti_russia: '🌍 Anti',
+    pro_russia: '🇷🇺 за Россию',
+    neutral: '⚖️ нейтрально',
+    anti_russia: '🌍 против России',
   };
   return (
     <span className={`text-xs px-1.5 py-0.5 rounded ${styles[stance] || ''}`}>
       {labels[stance] || stance}
     </span>
   );
+}
+
+function narrativeStatusLabel(status: string): string {
+  if (status === 'active') return 'активно обсуждается';
+  if (status === 'fading') return 'обсуждение стихает';
+  return status;
+}
+
+function entityKindLabel(kind: string): string {
+  if (kind === 'person') return 'человек';
+  if (kind === 'org') return 'организация';
+  if (kind === 'place') return 'место';
+  if (kind === 'event') return 'событие';
+  return kind;
 }
 
 function ArticleRow({ article, onNavigate }: { article: Article; onNavigate: () => void }) {
@@ -93,7 +107,7 @@ function CountryDetail({ countryId }: { countryId: string }) {
         <div>
           <h2 className="text-xl font-bold text-white">{country.nameRu}</h2>
           <div className="text-sm text-zinc-400">
-            Tier {country.tier} · {country.region}
+Уровень {country.tier} · {country.region}
             {temp && <span className="ml-2">· 🌡 {temp.value}° ({temp.delta > 0 ? '+' : ''}{temp.delta})</span>}
           </div>
         </div>
@@ -132,7 +146,7 @@ function CountryDetail({ countryId }: { countryId: string }) {
                     n.status === 'active' ? 'bg-green-500/20 text-green-300' :
                     n.status === 'fading' ? 'bg-yellow-500/20 text-yellow-300' :
                     'bg-zinc-500/20 text-zinc-300'
-                  }`}>{n.status}</span>
+                  }`}>{narrativeStatusLabel(n.status)}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-zinc-500 mt-1">
                   <span>Расхождение: {n.divergenceScore}%</span>
@@ -213,16 +227,16 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
             <span className={`px-2 py-0.5 rounded-full ${
               narrative.status === 'active' ? 'bg-green-500/20 text-green-300' :
               'bg-yellow-500/20 text-yellow-300'
-            }`}>{narrative.status}</span>
-            <span>Расхождение: {narrative.divergenceScore}%</span>
-            {workspace && <span>graph: {workspace.graphStats.nodes}N/{workspace.graphStats.edges}E</span>}
+            }`}>{narrativeStatusLabel(narrative.status)}</span>
+            <span>Уровень споров: {narrative.divergenceScore}%</span>
+            {workspace && <span>Карта связей: {workspace.graphStats.nodes} узлов / {workspace.graphStats.edges} связей</span>}
           </div>
         </div>
         <button
           onClick={() => fetchBrief(narrativeId).then(setBrief).catch(() => null)}
           className="text-xs px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
         >
-          Generate brief
+Собрать краткую сводку
         </button>
       </div>
 
@@ -255,12 +269,12 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
       {/* Entities + Evidence */}
       {workspace && workspace.entities.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🧩 Actors & Evidence</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🧩 Кто участвует и чем это подтверждается</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {workspace.entities.slice(0, 8).map((e) => (
               <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50">
                 <div className="text-sm text-white">{e.label}</div>
-                <div className="text-xs text-zinc-500">{e.kind} · {e.relation} · conf {e.confidence.toFixed(2)}</div>
+                <div className="text-xs text-zinc-500">{entityKindLabel(e.kind)} · связь: {e.relation} · уверенность: {e.confidence.toFixed(2)}</div>
               </div>
             ))}
           </div>
@@ -270,7 +284,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
       {/* Timeline */}
       {workspace && workspace.timeline.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🕒 Timeline (case workspace)</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🕒 Хронология событий по сюжету</h3>
           <div className="space-y-1">
             {workspace.timeline.slice(0, 12).map((a) => (
               <ArticleRow
@@ -299,7 +313,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
       {/* Brief */}
       {brief && (
         <div className="p-3 rounded-xl border border-zinc-700 bg-zinc-900/80">
-          <h3 className="text-sm font-semibold text-zinc-300 mb-2">📝 Analyst brief</h3>
+          <h3 className="text-sm font-semibold text-zinc-300 mb-2">📝 Краткая сводка по сюжету</h3>
           <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300">
             {brief.bullets.map((b, i) => <li key={i}>{b}</li>)}
           </ul>

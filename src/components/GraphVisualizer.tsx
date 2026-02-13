@@ -14,9 +14,9 @@ function NodeTypeLabel({ type, id }: { type: NodeType; id: string | number }) {
       return <span>{c?.flag} {c?.nameRu || id}</span>;
     }
     case 'Narrative':
-      return <span>📰 Narrative #{id}</span>;
+      return <span>📰 Сюжет №{id}</span>;
     case 'Article':
-      return <span>📄 Article #{id}</span>;
+      return <span>📄 Статья №{id}</span>;
     default:
       return <span>{type} #{id}</span>;
   }
@@ -46,7 +46,7 @@ export function GraphVisualizer() {
       })
       .catch((e: unknown) => {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to load graph links');
+          setError(e instanceof Error ? e.message : 'Не удалось загрузить связи');
           setNeighbors([]);
         }
       });
@@ -59,7 +59,7 @@ export function GraphVisualizer() {
   if (!state.focus) {
     return (
       <div className="p-4">
-        <h2 className="text-lg font-semibold text-white mb-3">🕸️ Граф связей (live)</h2>
+        <h2 className="text-lg font-semibold text-white mb-3">🕸️ Карта связей</h2>
         <div className="text-sm text-zinc-500 text-center py-8">
           Выберите объект чтобы увидеть его связи
         </div>
@@ -74,7 +74,7 @@ export function GraphVisualizer() {
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold text-white mb-3">🕸️ Граф связей (live)</h2>
+      <h2 className="text-lg font-semibold text-white mb-3">🕸️ Карта связей</h2>
 
       <div className="text-center mb-4">
         <div className="inline-block px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/50">
@@ -114,7 +114,7 @@ export function GraphVisualizer() {
                   if (kind === 'article') navigate('Article', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
                 }}
               >
-                <div className="text-xs text-zinc-500">{n.relation} · confidence {n.confidence.toFixed(2)}</div>
+                <div className="text-xs text-zinc-500">{n.relation} · уверенность: {n.confidence.toFixed(2)}</div>
                 <div className="text-sm text-white line-clamp-2">{n.node.label}</div>
               </button>
             ))}

@@ -188,7 +188,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   };
 
   if (!nodeId) {
-    return <div className="p-3 text-xs text-zinc-500">Открой кейс, чтобы увидеть граф.</div>;
+    return <div className="p-3 text-xs text-zinc-500">Открой сюжет, чтобы увидеть карту связей.</div>;
   }
 
   if (error) {
@@ -196,13 +196,13 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   }
 
   if (!graphData || !filtered) {
-    return <div className="p-3 text-xs text-zinc-500">Загрузка графа...</div>;
+    return <div className="p-3 text-xs text-zinc-500">Загрузка карты связей…</div>;
   }
 
   return (
     <div className="h-full w-full flex flex-col">
       <div className="px-3 pt-2 pb-1 text-xs text-zinc-500 flex items-center justify-between gap-2 flex-wrap">
-        <span>{renderMode.toUpperCase()} · {filtered.nodes.length} nodes / {filtered.links.length} links</span>
+        <span>Режим: {renderMode.toUpperCase()} · узлов: {filtered.nodes.length} · связей: {filtered.links.length}</span>
         <div className="flex gap-1">
           <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode === 'svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>SVG</button>
           <button onClick={() => setRenderMode('2d')} className={`px-2 py-0.5 rounded ${renderMode === '2d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>2D</button>
@@ -211,7 +211,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
       </div>
 
       <div className="px-3 pb-2 text-[11px] text-zinc-500 flex items-center gap-2 flex-wrap">
-        <span>conf ≥</span>
+        <span>Показывать связи с уверенностью ≥</span>
         <input
           type="range"
           min={0}
@@ -226,11 +226,11 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
           onChange={(e) => setKindFilter(e.target.value as KindFilter)}
           className="bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5"
         >
-          <option value="all">all</option>
-          <option value="person">person</option>
-          <option value="org">org</option>
-          <option value="place">place</option>
-          <option value="event">event</option>
+          <option value="all">все типы</option>
+          <option value="person">люди</option>
+          <option value="org">организации</option>
+          <option value="place">места</option>
+          <option value="event">события</option>
         </select>
       </div>
 
