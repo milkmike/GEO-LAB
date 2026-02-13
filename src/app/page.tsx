@@ -257,9 +257,7 @@ export default function Home() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <SignalDeck />
-
+          <div className="flex-1 overflow-y-auto p-4">
             <div className="px-2">
               <ActiveCaseHeader />
               <DetailPanel />
