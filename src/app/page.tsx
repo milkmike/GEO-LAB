@@ -214,17 +214,15 @@ export default function Home() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="g-panel rounded-2xl">
-              <SignalDeck />
-            </div>
+            <SignalDeck />
 
-            <div className="g-panel rounded-2xl p-4">
+            <div className="px-2">
               <ActiveCaseHeader />
               <DetailPanel />
             </div>
           </div>
 
-          <div className="w-[30rem] max-w-[42vw] border-l border-zinc-800 overflow-y-auto flex-shrink-0 g-panel">
+          <div className="w-[28rem] max-w-[40vw] border-l border-zinc-800 overflow-y-auto flex-shrink-0">
             <RightRail />
           </div>
         </div>

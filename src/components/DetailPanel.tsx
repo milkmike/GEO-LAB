@@ -18,7 +18,7 @@ import {
 } from '@/mock/data';
 import type { Article, VoxComment } from '@/types/ontology';
 import { fetchBrief, fetchCase, type BriefResponse, type CaseResponse } from '@/lib/analyst/client';
-import { entityKindLabel, narrativeStatusLabel, relationLabel } from '@/lib/plain-language';
+import { narrativeStatusLabel } from '@/lib/plain-language';
 
 function SentimentBadge({ value }: { value: number }) {
   const color = value > 0.3 ? 'text-green-400' : value < -0.3 ? 'text-red-400' : 'text-zinc-400';
@@ -208,15 +208,8 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   if (!narrative) return <div className="p-4 text-zinc-500">Сюжет не найден</div>;
 
   const articles = getArticlesForNarrative(narrativeId);
-  const countriesPlain = narrative.countries
-    .map((cid) => getCountry(cid)?.nameRu)
-    .filter(Boolean)
-    .join(', ');
-
-  const simpleSummary = brief?.bullets?.[0] || `Сейчас в центре внимания тема: ${narrative.titleRu}.`;
-
   const timelineItems = workspace
-    ? workspace.timeline.slice(0, 12).map((a) => ({
+    ? workspace.timeline.slice(0, 14).map((a) => ({
         id: a.articleId,
         title: a.title,
         source: a.source,
@@ -224,7 +217,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         sentiment: a.sentiment,
         stance: a.stance,
       }))
-    : articles.slice(0, 12).map((a) => ({
+    : articles.slice(0, 14).map((a) => ({
         id: a.id,
         title: a.title,
         source: a.source,
@@ -233,72 +226,57 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         stance: a.stance,
       }));
 
+  const intro = brief?.bullets?.[0] || `Сюжет: ${narrative.titleRu}`;
+
   return (
-    <div className="space-y-5">
-      <div className="g-panel rounded-2xl p-4 space-y-2">
-        <div className="g-kicker">Главный сюжет</div>
-        <h2 className="t-display font-semibold text-white">{narrative.titleRu}</h2>
-        <p className="t-body text-zinc-300">{simpleSummary}</p>
-        <div className="flex flex-wrap gap-2 t-meta text-zinc-400">
-          <span className={`px-2 py-0.5 rounded-full ${
-            narrative.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
-          }`}>{narrativeStatusLabel(narrative.status)}</span>
-          <span>Страны: {countriesPlain}</span>
-          <span>Уровень споров: {narrative.divergenceScore}%</span>
-        </div>
+    <div className="space-y-4">
+      <div className="text-center py-3">
+        <div className="g-kicker">Сюжет на линии времени</div>
+        <h2 className="t-display text-white font-semibold">{narrative.titleRu}</h2>
+        <p className="t-body text-zinc-400 mt-1">{intro}</p>
       </div>
 
-      <section className="g-panel rounded-2xl p-4">
-        <div className="flex items-end justify-between mb-3">
-          <div>
-            <div className="g-kicker">Главная ось сюжета</div>
-            <h3 className="t-body text-white font-semibold">Вертикальная лента событий</h3>
-          </div>
-          <div className="t-meta text-zinc-500">Сверху новое, ниже более раннее</div>
-        </div>
+      <section className="relative py-2 min-h-[60vh]">
+        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-cyan-400/20 via-cyan-300/60 to-cyan-400/20" />
 
-        <div className="space-y-0">
+        <div className="space-y-2">
           {timelineItems.map((item, i) => {
-            const isLast = i === timelineItems.length - 1;
+            const side = i % 2 === 0 ? 'md:justify-start' : 'md:justify-end';
             return (
-              <div key={item.id} className="relative pl-8 pb-4">
-                <span className="absolute left-1.5 top-1.5 h-3 w-3 rounded-full bg-cyan-300 ring-4 ring-cyan-500/20" />
-                {!isLast && <span className="absolute left-[11px] top-5 bottom-0 w-px bg-zinc-700" />}
+              <div key={item.id} className={`relative flex ${side} justify-center w-full py-2`}>
+                <span className="absolute left-1/2 top-6 -translate-x-1/2 h-3 w-3 rounded-full bg-cyan-200 ring-4 ring-cyan-500/30" />
 
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
-                  <div className="t-body text-white">{item.title}</div>
-                  <div className="t-meta text-zinc-500 mt-1">
-                    {new Date(item.publishedAt).toLocaleDateString('ru')} · {item.source}
-                  </div>
+                <article className="w-[88%] md:w-[44%] rounded-2xl border border-zinc-800/80 bg-zinc-950/65 p-3 hover:border-cyan-500/50 transition-colors">
+                  <div className="t-meta text-zinc-500">{new Date(item.publishedAt).toLocaleDateString('ru')} · {item.source}</div>
+                  <h3 className="t-body text-white mt-1">{item.title}</h3>
                   <div className="t-meta text-zinc-400 mt-1">
-                    Тон публикации: <SentimentBadge value={item.sentiment} /> · <StanceBadge stance={String(item.stance)} />
+                    Тон: <SentimentBadge value={item.sentiment} /> · <StanceBadge stance={String(item.stance)} />
                   </div>
                   <button
                     onClick={() => navigate('Article', item.id, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
-                    className="mt-2 t-meta px-2 py-1 rounded border border-zinc-700 hover:border-zinc-500 text-zinc-300"
+                    className="mt-2 t-meta px-2 py-1 rounded border border-zinc-700 text-zinc-300 hover:border-cyan-500/50"
                   >
                     Открыть материал
                   </button>
-                </div>
+                </article>
               </div>
             );
           })}
 
           {timelineItems.length === 0 && (
-            <div className="t-body text-zinc-500">Пока нет событий для этой ленты.</div>
+            <div className="t-body text-zinc-500 text-center py-8">Пока нет событий для этой линии времени.</div>
           )}
         </div>
       </section>
 
       {workspace && workspace.entities.length > 0 && (
-        <section className="g-panel rounded-2xl p-4">
-          <h3 className="t-body font-semibold text-zinc-300 mb-2">Чем это подтверждается</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {workspace.entities.slice(0, 8).map((e) => (
-              <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50">
-                <div className="t-body text-white">{e.label}</div>
-                <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {relationLabel(e.relation)} · уверенность: {e.confidence.toFixed(2)}</div>
-              </div>
+        <section className="pt-2 border-t border-zinc-800">
+          <h3 className="t-body text-zinc-300 font-semibold mb-2">Кто участвует</h3>
+          <div className="flex flex-wrap gap-2">
+            {workspace.entities.slice(0, 10).map((e) => (
+              <span key={e.id} className="t-meta px-2 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-zinc-300">
+                {e.label}
+              </span>
             ))}
           </div>
         </section>
