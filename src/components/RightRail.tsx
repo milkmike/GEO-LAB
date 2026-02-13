@@ -33,19 +33,19 @@ export function RightRail() {
       <div className="p-2 border-b border-zinc-800 flex gap-2">
         <button
           onClick={() => setTab('graph')}
-          className={`text-xs px-2 py-1 rounded border ${tab === 'graph' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
+          className={`t-meta px-2 py-1 rounded border ${tab === 'graph' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
 Связи
         </button>
         <button
           onClick={() => setTab('graph3d')}
-          className={`text-xs px-2 py-1 rounded border ${tab === 'graph3d' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
+          className={`t-meta px-2 py-1 rounded border ${tab === 'graph3d' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
 Карта
         </button>
         <button
           onClick={() => setTab('evidence')}
-          className={`text-xs px-2 py-1 rounded border ${tab === 'evidence' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
+          className={`t-meta px-2 py-1 rounded border ${tab === 'evidence' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
 Подтверждения
         </button>
@@ -65,24 +65,24 @@ export function RightRail() {
 
       {tab === 'evidence' && (
         <div className="flex-1 overflow-y-auto p-3">
-          <h3 className="text-sm text-zinc-300 mb-2">Что подтверждает этот сюжет</h3>
+          <h3 className="t-body text-zinc-300 mb-2">Что подтверждает этот сюжет</h3>
           {!narrativeId && (
-            <div className="text-xs text-zinc-500">Сначала открой сюжет, и здесь появятся подтверждения.</div>
+            <div className="t-meta text-zinc-500">Сначала открой сюжет, и здесь появятся подтверждения.</div>
           )}
           {narrativeId && !workspace && (
-            <div className="text-xs text-zinc-500">Загружаю подтверждения…</div>
+            <div className="t-meta text-zinc-500">Загружаю подтверждения…</div>
           )}
           {workspace && (
             <div className="space-y-2">
               {workspace.entities.slice(0, 12).map((e) => (
                 <div key={e.id} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800">
-                  <div className="text-sm text-white line-clamp-2">{e.label}</div>
-                  <div className="text-xs text-zinc-500">{entityKindLabel(e.kind)} · связь: {e.relation} · уверенность: {e.confidence.toFixed(2)}</div>
+                  <div className="t-body text-white line-clamp-2">{e.label}</div>
+                  <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {e.relation} · уверенность: {e.confidence.toFixed(2)}</div>
                   <div className="text-[11px] text-zinc-600 line-clamp-2">{e.evidence.join(', ')}</div>
                 </div>
               ))}
               {workspace.entities.length === 0 && (
-                <div className="text-xs text-zinc-500">Пока нет извлечённых evidence-связей.</div>
+                <div className="t-meta text-zinc-500">Пока нет извлечённых evidence-связей.</div>
               )}
             </div>
           )}

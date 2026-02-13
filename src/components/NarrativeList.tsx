@@ -15,10 +15,10 @@ export function NarrativeList() {
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+      <h2 className="t-display font-semibold text-white mb-3 flex items-center gap-2">
         📰 Сюжеты
         {focusedCountry && (
-          <span className="text-xs text-zinc-500 font-normal">
+          <span className="t-meta text-zinc-500 font-normal">
             фильтр: {getCountry(focusedCountry)?.flag} {getCountry(focusedCountry)?.nameRu}
           </span>
         )}
@@ -38,9 +38,9 @@ export function NarrativeList() {
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-white">{n.titleRu}</span>
+                <span className="t-body font-medium text-white">{n.titleRu}</span>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                  <span className={`t-meta px-2 py-0.5 rounded-full ${
                     n.status === 'active' ? 'bg-green-500/20 text-green-300' :
                     n.status === 'fading' ? 'bg-yellow-500/20 text-yellow-300' :
                     'bg-zinc-500/20 text-zinc-300'
@@ -50,7 +50,7 @@ export function NarrativeList() {
               
               {/* Divergence bar */}
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-xs text-zinc-500 w-20">Расхожд.</span>
+                <span className="t-meta text-zinc-500 w-20">Расхожд.</span>
                 <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                   <div 
                     className={`h-full rounded-full ${
@@ -61,26 +61,26 @@ export function NarrativeList() {
                     style={{ width: `${n.divergenceScore}%` }}
                   />
                 </div>
-                <span className="text-xs text-zinc-400 w-8 text-right">{n.divergenceScore}%</span>
+                <span className="t-meta text-zinc-400 w-8 text-right">{n.divergenceScore}%</span>
               </div>
 
               <div className="flex items-center gap-2 mt-2">
                 <div className="flex gap-1">
                   {n.countries.map(cid => (
-                    <span key={cid} className="text-sm" title={getCountry(cid)?.nameRu}>
+                    <span key={cid} className="t-body" title={getCountry(cid)?.nameRu}>
                       {getCountry(cid)?.flag}
                     </span>
                   ))}
                 </div>
-                <span className="text-xs text-zinc-600">·</span>
-                <span className="text-xs text-zinc-500">{n.articleCount} статей</span>
+                <span className="t-meta text-zinc-600">·</span>
+                <span className="t-meta text-zinc-500">{n.articleCount} статей</span>
               </div>
             </button>
           );
         })}
         
         {filtered.length === 0 && (
-          <div className="text-center text-zinc-500 text-sm py-4">
+          <div className="text-center text-zinc-500 t-body py-4">
             Нет сюжетов для выбранной страны
           </div>
         )}

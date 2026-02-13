@@ -188,20 +188,20 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   };
 
   if (!nodeId) {
-    return <div className="p-3 text-xs text-zinc-500">Открой сюжет, чтобы увидеть карту связей.</div>;
+    return <div className="p-3 t-meta text-zinc-500">Открой сюжет, чтобы увидеть карту связей.</div>;
   }
 
   if (error) {
-    return <div className="p-3 text-xs text-red-400">{error}</div>;
+    return <div className="p-3 t-meta text-red-400">{error}</div>;
   }
 
   if (!graphData || !filtered) {
-    return <div className="p-3 text-xs text-zinc-500">Загрузка карты связей…</div>;
+    return <div className="p-3 t-meta text-zinc-500">Загрузка карты связей…</div>;
   }
 
   return (
     <div className="h-full w-full flex flex-col">
-      <div className="px-3 pt-2 pb-1 text-xs text-zinc-500 flex items-center justify-between gap-2 flex-wrap">
+      <div className="px-3 pt-2 pb-1 t-meta text-zinc-500 flex items-center justify-between gap-2 flex-wrap">
         <span>Режим: {renderMode.toUpperCase()} · узлов: {filtered.nodes.length} · связей: {filtered.links.length}</span>
         <div className="flex gap-1">
           <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode === 'svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>SVG</button>

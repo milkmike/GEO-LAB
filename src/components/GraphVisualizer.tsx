@@ -59,8 +59,8 @@ export function GraphVisualizer() {
   if (!state.focus) {
     return (
       <div className="p-4">
-        <h2 className="text-lg font-semibold text-white mb-3">🕸️ Карта связей</h2>
-        <div className="text-sm text-zinc-500 text-center py-8">
+        <h2 className="t-display font-semibold text-white mb-3">🕸️ Карта связей</h2>
+        <div className="t-body text-zinc-500 text-center py-8">
           Выберите объект чтобы увидеть его связи
         </div>
       </div>
@@ -74,30 +74,30 @@ export function GraphVisualizer() {
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold text-white mb-3">🕸️ Карта связей</h2>
+      <h2 className="t-display font-semibold text-white mb-3">🕸️ Карта связей</h2>
 
       <div className="text-center mb-4">
         <div className="inline-block px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/50">
-          <div className="text-sm font-medium text-blue-300">
+          <div className="t-body font-medium text-blue-300">
             <NodeTypeLabel type={state.focus.nodeType} id={state.focus.nodeId} />
           </div>
-          <div className="text-xs text-blue-400/60">{graphNodeId}</div>
+          <div className="t-meta text-blue-400/60">{graphNodeId}</div>
         </div>
       </div>
 
-      {error && <div className="text-xs text-red-400 mb-3">{error}</div>}
+      {error && <div className="t-meta text-red-400 mb-3">{error}</div>}
 
       {!error && (
         <>
           <div className="space-y-2 mb-4">
             {Object.entries(grouped).map(([relation, count]) => (
               <div key={relation} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50">
-                <span className="text-sm text-zinc-300">{relation}</span>
-                <span className="text-sm text-white font-semibold">{count}</span>
+                <span className="t-body text-zinc-300">{relation}</span>
+                <span className="t-body text-white font-semibold">{count}</span>
               </div>
             ))}
             {neighbors.length === 0 && (
-              <div className="text-xs text-zinc-500">Связей пока нет</div>
+              <div className="t-meta text-zinc-500">Связей пока нет</div>
             )}
           </div>
 
@@ -114,8 +114,8 @@ export function GraphVisualizer() {
                   if (kind === 'article') navigate('Article', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
                 }}
               >
-                <div className="text-xs text-zinc-500">{n.relation} · уверенность: {n.confidence.toFixed(2)}</div>
-                <div className="text-sm text-white line-clamp-2">{n.node.label}</div>
+                <div className="t-meta text-zinc-500">{n.relation} · уверенность: {n.confidence.toFixed(2)}</div>
+                <div className="t-body text-white line-clamp-2">{n.node.label}</div>
               </button>
             ))}
           </div>
@@ -124,13 +124,13 @@ export function GraphVisualizer() {
 
       {state.history.length > 1 && (
         <div className="mt-6">
-          <h3 className="text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wider">Путь навигации</h3>
+          <h3 className="t-meta font-semibold text-zinc-500 mb-2 uppercase tracking-wider">Путь навигации</h3>
           <div className="space-y-1">
             {state.history.map((h, i) => (
               <button
                 key={i}
                 onClick={() => navigate(h.nodeType, h.nodeId, h.via)}
-                className={`w-full text-left text-xs p-1.5 rounded transition-colors ${
+                className={`w-full text-left t-meta p-1.5 rounded transition-colors ${
                   i === state.historyIndex
                     ? 'text-blue-300 bg-blue-500/10'
                     : 'text-zinc-500 hover:text-zinc-300'

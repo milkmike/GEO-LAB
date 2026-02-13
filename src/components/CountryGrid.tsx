@@ -26,9 +26,9 @@ export function CountryGrid() {
 
   return (
     <div className="p-4">
-      <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+      <h2 className="t-display font-semibold text-white mb-3 flex items-center gap-2">
         🌍 Страны
-        <span className="text-xs text-zinc-500 font-normal">
+        <span className="t-meta text-zinc-500 font-normal">
           клик → провалиться в страну
         </span>
       </h2>
@@ -56,13 +56,13 @@ export function CountryGrid() {
               `}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{country.flag}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full border ${tempColor(country.temperature ?? 0)}`}>
+                <span className="t-display">{country.flag}</span>
+                <span className={`t-meta px-2 py-0.5 rounded-full border ${tempColor(country.temperature ?? 0)}`}>
                   {country.temperature}°
                 </span>
               </div>
               <div className="font-medium text-white">{country.nameRu}</div>
-              <div className="text-xs text-zinc-500 mt-1">
+              <div className="t-meta text-zinc-500 mt-1">
                 Tier {country.tier} · {country.region}
               </div>
               
@@ -74,7 +74,7 @@ export function CountryGrid() {
                 />
               </div>
               
-              <div className="flex justify-between text-xs text-zinc-600 mt-2">
+              <div className="flex justify-between t-meta text-zinc-600 mt-2">
                 <span>{narratives.length} сюжетов</span>
                 <span>{articles.length} статей</span>
               </div>

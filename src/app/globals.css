@@ -154,4 +154,17 @@
   .g-kicker {
     @apply text-[11px] uppercase tracking-[0.14em] text-zinc-400;
   }
+
+  /* Typography system: only 3 text sizes */
+  .t-display {
+    @apply text-[22px] leading-7 font-semibold;
+  }
+
+  .t-body {
+    @apply text-[14px] leading-5;
+  }
+
+  .t-meta {
+    @apply text-[11px] leading-4;
+  }
 }
