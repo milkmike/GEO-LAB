@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { CountryGrid } from '@/components/CountryGrid';
 import { NarrativeList } from '@/components/NarrativeList';
@@ -8,14 +8,33 @@ import { DetailPanel } from '@/components/DetailPanel';
 import { GraphVisualizer } from '@/components/GraphVisualizer';
 import { useGraph } from '@/lib/graph-provider';
 import { useUrlSync } from '@/lib/url-sync';
+import { fetchGraphHealth } from '@/lib/graph/client';
 
 function UrlSyncWrapper() {
   useUrlSync();
   return null;
 }
 
+function GraphHealthBadge() {
+  const [health, setHealth] = useState<{ status: string; entities: number; edges: number } | null>(null);
+
+  useEffect(() => {
+    fetchGraphHealth().then(setHealth).catch(() => null);
+  }, []);
+
+  if (!health) {
+    return <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-500">graph: ...</span>;
+  }
+
+  return (
+    <span className={`px-2 py-1 rounded ${health.status === 'ok' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+      graph: {health.status} · {health.entities}N/{health.edges}E
+    </span>
+  );
+}
+
 function FilterBar() {
-  const { state, setFilters, clearFilters } = useGraph();
+  const { state, clearFilters } = useGraph();
   const hasFilters = Object.keys(state.filters).length > 0;
   
   return (
@@ -61,6 +80,7 @@ export default function Home() {
         <div className="ml-auto flex items-center gap-3 text-xs text-zinc-500">
           <span className="px-2 py-1 rounded bg-zinc-800">🧬 Ontology v1</span>
           <span className="px-2 py-1 rounded bg-zinc-800">8 стран · 5 сюжетов · 10 статей</span>
+          <GraphHealthBadge />
         </div>
       </header>
 

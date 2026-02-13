@@ -4,7 +4,7 @@ import { useGraph } from '@/lib/graph-provider';
 import { NARRATIVES, getCountry } from '@/mock/data';
 
 export function NarrativeList() {
-  const { navigate, state, isHighlighted } = useGraph();
+  const { navigate, state } = useGraph();
   
   // Если выбрана страна — фильтруем сюжеты
   const focusedCountry = state.focus?.nodeType === 'Country' ? String(state.focus.nodeId) : null;
