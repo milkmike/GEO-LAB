@@ -16,63 +16,31 @@ import {
   ARTICLES,
   CHANNELS,
 } from '@/mock/data';
-import type { Article, VoxComment } from '@/types/ontology';
+import type { VoxComment } from '@/types/ontology';
 import { fetchBrief, fetchCase, type BriefResponse, type CaseResponse } from '@/lib/analyst/client';
 import { narrativeStatusLabel } from '@/lib/plain-language';
+import { TimelineSpine, type SpineItem } from '@/components/TimelineSpine';
 
-function SentimentBadge({ value }: { value: number }) {
-  const color = value > 0.3 ? 'text-green-400' : value < -0.3 ? 'text-red-400' : 'text-zinc-400';
-  return <span className={`t-meta ${color}`}>{value > 0 ? '+' : ''}{value.toFixed(1)}</span>;
+function stanceLabel(stance: string): string {
+  if (stance === 'pro_russia') return 'за Россию';
+  if (stance === 'anti_russia') return 'против России';
+  return 'нейтрально';
 }
 
-function StanceBadge({ stance }: { stance: string }) {
-  const styles: Record<string, string> = {
-    pro_russia: 'bg-blue-500/20 text-blue-300',
-    neutral: 'bg-zinc-500/20 text-zinc-300',
-    anti_russia: 'bg-orange-500/20 text-orange-300',
-  };
-  const labels: Record<string, string> = {
-    pro_russia: '🇷🇺 за Россию',
-    neutral: '⚖️ нейтрально',
-    anti_russia: '🌍 против России',
-  };
-  return (
-    <span className={`t-meta px-1.5 py-0.5 rounded ${styles[stance] || ''}`}>
-      {labels[stance] || stance}
-    </span>
-  );
-}
-
-function ArticleRow({ article, onNavigate }: { article: Article; onNavigate: () => void }) {
-  return (
-    <button onClick={onNavigate} className="w-full text-left p-2 rounded-lg hover:bg-zinc-800 transition-colors">
-      <div className="t-body text-white line-clamp-2">{article.title}</div>
-      <div className="flex items-center gap-2 mt-1">
-        <span className="t-meta text-zinc-500">{article.source}</span>
-        <SentimentBadge value={article.sentiment} />
-        <StanceBadge stance={article.stance} />
-        <span className="t-meta text-zinc-600">{new Date(article.publishedAt).toLocaleDateString('ru')}</span>
-      </div>
-    </button>
-  );
+function sentimentLabel(v: number): string {
+  if (v > 0.2) return `позитивно (+${v.toFixed(1)})`;
+  if (v < -0.2) return `негативно (${v.toFixed(1)})`;
+  return `спокойно (${v.toFixed(1)})`;
 }
 
 function CommentRow({ comment }: { comment: VoxComment }) {
   return (
     <div className="p-2 rounded-lg bg-zinc-800/50">
       <div className="t-body text-zinc-300 line-clamp-2">{comment.text}</div>
-      <div className="flex items-center gap-2 mt-1">
-        <span className="t-meta">{comment.emotion}</span>
-        <StanceBadge stance={comment.stance} />
-        <span className="t-meta text-zinc-600">{comment.topics.join(', ')}</span>
-      </div>
+      <div className="t-meta text-zinc-500 mt-1">{comment.emotion} · {stanceLabel(comment.stance)}</div>
     </div>
   );
 }
-
-// ============================================================
-// Country Detail
-// ============================================================
 
 function CountryDetail({ countryId }: { countryId: string }) {
   const { navigate } = useGraph();
@@ -86,110 +54,63 @@ function CountryDetail({ countryId }: { countryId: string }) {
   const events = getEventsForCountry(countryId);
   const temp = getTemperatureForCountry(countryId);
 
+  const fromEvents: SpineItem[] = events.map((e) => ({
+    id: `event:${e.id}`,
+    title: e.title,
+    date: e.date,
+    meta: `Событие · важность: ${e.impact}`,
+    cta: e.relatedNarrativeIds[0] ? 'Открыть сюжет' : undefined,
+  }));
+
+  const fromArticles: SpineItem[] = articles.map((a) => ({
+    id: `article:${a.id}`,
+    title: a.title,
+    date: a.publishedAt,
+    meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
+    cta: 'Открыть материал',
+  }));
+
+  const timelineItems: SpineItem[] = [...fromEvents, ...fromArticles].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <span className="t-display">{country.flag}</span>
-        <div>
-          <h2 className="t-display font-bold text-white">{country.nameRu}</h2>
-          <div className="t-body text-zinc-400">
-Уровень внимания {country.tier} · {country.region}
-            {temp && <span className="ml-2">· 🌡 {temp.value}° ({temp.delta > 0 ? '+' : ''}{temp.delta})</span>}
-          </div>
+    <div className="space-y-4">
+      <div className="text-center py-2">
+        <div className="g-kicker">Линия времени страны</div>
+        <h2 className="t-display text-white font-semibold">{country.flag} {country.nameRu}</h2>
+        <p className="t-body text-zinc-400">
+          {country.region} · уровень внимания {country.tier}
+          {temp ? ` · индекс: ${temp.value} (${temp.delta > 0 ? '+' : ''}${temp.delta})` : ''}
+        </p>
+        <div className="t-meta text-zinc-500 mt-1">
+          {narratives.length} сюжетов · {articles.length} материалов · {channels.length} каналов · {comments.length} комментариев
         </div>
       </div>
 
-      {/* Связанные объекты */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        {[
-          { label: 'Сюжеты', count: narratives.length, emoji: '📰' },
-          { label: 'Статьи', count: articles.length, emoji: '📄' },
-          { label: 'Каналы', count: channels.length, emoji: '📡' },
-          { label: 'Комменты', count: comments.length, emoji: '💬' },
-        ].map(s => (
-          <div key={s.label} className="p-2 rounded-lg bg-zinc-800/50">
-            <div className="t-body">{s.emoji}</div>
-            <div className="t-body font-semibold text-white">{s.count}</div>
-            <div className="t-meta text-zinc-500">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <TimelineSpine
+        items={timelineItems}
+        emptyText="Пока нет событий на линии времени этой страны."
+        onOpen={(id) => {
+          const [kind, raw] = id.split(':');
+          if (!kind || !raw) return;
 
-      {/* Narratives */}
-      {narratives.length > 0 && (
-        <div>
-          <h3 className="t-body font-semibold text-zinc-400 mb-2">📰 Сюжеты</h3>
-          <div className="space-y-2">
-            {narratives.map(n => (
-              <button
-                key={n.id}
-                onClick={() => navigate('Narrative', n.id, { relation: 'has_narratives', fromType: 'Country', fromId: countryId })}
-                className="w-full text-left p-3 rounded-lg border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/50 transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="t-body text-white font-medium">{n.titleRu}</span>
-                  <span className={`t-meta px-2 py-0.5 rounded-full ${
-                    n.status === 'active' ? 'bg-green-500/20 text-green-300' :
-                    n.status === 'fading' ? 'bg-yellow-500/20 text-yellow-300' :
-                    'bg-zinc-500/20 text-zinc-300'
-                  }`}>{narrativeStatusLabel(n.status)}</span>
-                </div>
-                <div className="flex items-center gap-3 t-meta text-zinc-500 mt-1">
-                  <span>Расхождение: {n.divergenceScore}%</span>
-                  <span>{n.articleCount} статей</span>
-                  <span>{n.countries.join(', ')}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+          if (kind === 'article') {
+            navigate('Article', Number(raw), { relation: 'has_articles', fromType: 'Country', fromId: countryId });
+            return;
+          }
 
-      {/* Articles */}
-      {articles.length > 0 && (
-        <div>
-          <h3 className="t-body font-semibold text-zinc-400 mb-2">📄 Статьи</h3>
-          <div className="space-y-1">
-            {articles.map(a => (
-              <ArticleRow 
-                key={a.id} 
-                article={a} 
-                onNavigate={() => navigate('Article', a.id, { relation: 'has_articles', fromType: 'Country', fromId: countryId })} 
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Events */}
-      {events.length > 0 && (
-        <div>
-          <h3 className="t-body font-semibold text-zinc-400 mb-2">🔥 События</h3>
-          <div className="space-y-1">
-            {events.map(e => (
-              <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50 flex items-center justify-between">
-                <div>
-                  <div className="t-body text-white">{e.title}</div>
-                  <div className="t-meta text-zinc-500">{new Date(e.date).toLocaleDateString('ru')}</div>
-                </div>
-                <span className={`t-meta px-2 py-0.5 rounded ${
-                  e.impact === 'high' ? 'bg-red-500/20 text-red-300' :
-                  e.impact === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
-                  'bg-zinc-500/20 text-zinc-300'
-                }`}>{e.impact}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+          if (kind === 'event') {
+            const ev = events.find((e) => e.id === Number(raw));
+            if (ev?.relatedNarrativeIds[0]) {
+              navigate('Narrative', ev.relatedNarrativeIds[0], { relation: 'has_events', fromType: 'Country', fromId: countryId });
+            }
+          }
+        }}
+      />
     </div>
   );
 }
-
-// ============================================================
-// Narrative Detail
-// ============================================================
 
 function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   const { navigate } = useGraph();
@@ -208,66 +129,44 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   if (!narrative) return <div className="p-4 text-zinc-500">Сюжет не найден</div>;
 
   const articles = getArticlesForNarrative(narrativeId);
-  const timelineItems = workspace
-    ? workspace.timeline.slice(0, 14).map((a) => ({
-        id: a.articleId,
+  const timelineItems: SpineItem[] = (workspace
+    ? workspace.timeline.map((a) => ({
+        id: `article:${a.articleId}`,
         title: a.title,
-        source: a.source,
-        publishedAt: a.publishedAt,
-        sentiment: a.sentiment,
-        stance: a.stance,
+        date: a.publishedAt,
+        meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
+        cta: 'Открыть материал',
       }))
-    : articles.slice(0, 14).map((a) => ({
-        id: a.id,
+    : articles.map((a) => ({
+        id: `article:${a.id}`,
         title: a.title,
-        source: a.source,
-        publishedAt: a.publishedAt,
-        sentiment: a.sentiment,
-        stance: a.stance,
-      }));
+        date: a.publishedAt,
+        meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
+        cta: 'Открыть материал',
+      }))).slice(0, 14);
 
   const intro = brief?.bullets?.[0] || `Сюжет: ${narrative.titleRu}`;
 
   return (
     <div className="space-y-4">
-      <div className="text-center py-3">
+      <div className="text-center py-2">
         <div className="g-kicker">Сюжет на линии времени</div>
         <h2 className="t-display text-white font-semibold">{narrative.titleRu}</h2>
-        <p className="t-body text-zinc-400 mt-1">{intro}</p>
+        <p className="t-body text-zinc-400">{intro}</p>
+        <div className="t-meta text-zinc-500 mt-1">
+          {narrativeStatusLabel(narrative.status)} · уровень споров {narrative.divergenceScore}%
+        </div>
       </div>
 
-      <section className="relative py-2 min-h-[60vh]">
-        <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-gradient-to-b from-cyan-400/20 via-cyan-300/60 to-cyan-400/20" />
-
-        <div className="space-y-2">
-          {timelineItems.map((item, i) => {
-            const side = i % 2 === 0 ? 'md:justify-start' : 'md:justify-end';
-            return (
-              <div key={item.id} className={`relative flex ${side} justify-center w-full py-2`}>
-                <span className="absolute left-1/2 top-6 -translate-x-1/2 h-3 w-3 rounded-full bg-cyan-200 ring-4 ring-cyan-500/30" />
-
-                <article className="w-[88%] md:w-[44%] rounded-2xl border border-zinc-800/80 bg-zinc-950/65 p-3 hover:border-cyan-500/50 transition-colors">
-                  <div className="t-meta text-zinc-500">{new Date(item.publishedAt).toLocaleDateString('ru')} · {item.source}</div>
-                  <h3 className="t-body text-white mt-1">{item.title}</h3>
-                  <div className="t-meta text-zinc-400 mt-1">
-                    Тон: <SentimentBadge value={item.sentiment} /> · <StanceBadge stance={String(item.stance)} />
-                  </div>
-                  <button
-                    onClick={() => navigate('Article', item.id, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
-                    className="mt-2 t-meta px-2 py-1 rounded border border-zinc-700 text-zinc-300 hover:border-cyan-500/50"
-                  >
-                    Открыть материал
-                  </button>
-                </article>
-              </div>
-            );
-          })}
-
-          {timelineItems.length === 0 && (
-            <div className="t-body text-zinc-500 text-center py-8">Пока нет событий для этой линии времени.</div>
-          )}
-        </div>
-      </section>
+      <TimelineSpine
+        items={timelineItems}
+        emptyText="Пока нет событий для этой линии времени."
+        onOpen={(id) => {
+          const [, raw] = id.split(':');
+          if (!raw) return;
+          navigate('Article', Number(raw), { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId });
+        }}
+      />
 
       {workspace && workspace.entities.length > 0 && (
         <section className="pt-2 border-t border-zinc-800">
@@ -285,70 +184,58 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   );
 }
 
-// ============================================================
-// Article Detail
-// ============================================================
-
 function ArticleDetail({ articleId }: { articleId: number }) {
   const { navigate } = useGraph();
-  const article = ARTICLES.find(a => a.id === articleId);
+  const article = ARTICLES.find((a) => a.id === articleId);
   if (!article) return <div className="p-4 text-zinc-500">Статья не найдена</div>;
 
   const comments = getCommentsForArticle(articleId);
-  const channel = CHANNELS.find(c => c.id === article.channelId);
+  const channel = CHANNELS.find((c) => c.id === article.channelId);
   const narrative = article.narrativeId ? getNarrative(article.narrativeId) : null;
   const country = getCountry(article.countryId);
 
+  const around = article.narrativeId
+    ? getArticlesForNarrative(article.narrativeId)
+    : getArticlesForCountry(article.countryId);
+
+  const timelineItems: SpineItem[] = around
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(0, 10)
+    .map((a) => ({
+      id: `article:${a.id}`,
+      title: a.id === articleId ? `● ${a.title}` : a.title,
+      date: a.publishedAt,
+      meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
+      cta: 'Открыть материал',
+    }));
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="t-display font-bold text-white">{article.title}</h2>
-        <div className="flex items-center gap-3 t-body text-zinc-400 mt-2">
-          <SentimentBadge value={article.sentiment} />
-          <StanceBadge stance={article.stance} />
-          <span>{new Date(article.publishedAt).toLocaleDateString('ru')}</span>
-          <span className="text-zinc-600">·</span>
-          <span>{article.language}</span>
-        </div>
+    <div className="space-y-4">
+      <div className="text-center py-2">
+        <div className="g-kicker">Материал на линии времени</div>
+        <h2 className="t-display text-white font-semibold">{article.title}</h2>
+        <p className="t-body text-zinc-400">
+          {country ? `${country.flag} ${country.nameRu}` : 'Страна не указана'}
+          {channel ? ` · ${channel.name}` : ''}
+          {narrative ? ` · сюжет: ${narrative.titleRu}` : ''}
+        </p>
       </div>
 
-      {/* Связи */}
-      <div className="space-y-2">
-        {country && (
-          <button
-            onClick={() => navigate('Country', country.id, { relation: 'about_country', fromType: 'Article', fromId: articleId })}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 transition-colors w-full text-left"
-          >
-            <span>🌍</span>
-            <span className="t-body text-zinc-300">{country.flag} {country.nameRu}</span>
-          </button>
-        )}
-        {channel && (
-          <button
-            onClick={() => navigate('Channel', channel.id, { relation: 'published_by', fromType: 'Article', fromId: articleId })}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 transition-colors w-full text-left"
-          >
-            <span>📡</span>
-            <span className="t-body text-zinc-300">{channel.name} ({channel.platform})</span>
-          </button>
-        )}
-        {narrative && (
-          <button
-            onClick={() => navigate('Narrative', narrative.id, { relation: 'belongs_to_narrative', fromType: 'Article', fromId: articleId })}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-zinc-800 transition-colors w-full text-left"
-          >
-            <span>📰</span>
-            <span className="t-body text-zinc-300">{narrative.titleRu}</span>
-          </button>
-        )}
-      </div>
+      <TimelineSpine
+        items={timelineItems}
+        emptyText="Рядом нет других материалов на этой линии времени."
+        onOpen={(id) => {
+          const [, raw] = id.split(':');
+          if (!raw) return;
+          navigate('Article', Number(raw), { relation: 'contains_articles', fromType: 'Article', fromId: articleId });
+        }}
+      />
 
-      {/* Comments */}
       {comments.length > 0 && (
         <div>
           <h3 className="t-body font-semibold text-zinc-400 mb-2">💬 Комментарии ({comments.length})</h3>
           <div className="space-y-2">
-            {comments.map(c => <CommentRow key={c.id} comment={c} />)}
+            {comments.map((c) => <CommentRow key={c.id} comment={c} />)}
           </div>
         </div>
       )}
@@ -356,23 +243,14 @@ function ArticleDetail({ articleId }: { articleId: number }) {
   );
 }
 
-// ============================================================
-// Detail Panel Router
-// ============================================================
-
 export function DetailPanel() {
   const { state } = useGraph();
 
   if (!state.focus) {
     return (
       <div className="p-8 text-center">
-        <div className="t-display mb-3">🐙</div>
-        <div className="text-zinc-500 t-body">
-          Выберите объект на графе для детального просмотра
-        </div>
-        <div className="text-zinc-600 t-meta mt-2">
-          Клик на страну → сюжеты → статьи → комментарии
-        </div>
+        <div className="t-display mb-3">⏱</div>
+        <div className="text-zinc-500 t-body">Выберите страну, сюжет или материал — и увидите его линию времени.</div>
       </div>
     );
   }
@@ -387,10 +265,6 @@ export function DetailPanel() {
     case 'Article':
       return <ArticleDetail articleId={Number(nodeId)} />;
     default:
-      return (
-        <div className="p-4 text-zinc-500">
-          Просмотр {nodeType} #{nodeId} — в разработке
-        </div>
-      );
+      return <div className="p-4 text-zinc-500">Для этого типа пока нет временной ленты.</div>;
   }
 }
