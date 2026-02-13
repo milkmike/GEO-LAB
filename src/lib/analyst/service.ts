@@ -37,12 +37,11 @@ function normalizeText(value: string): string {
 }
 
 function buildNarrativeTerms(narrative: (typeof NARRATIVES)[number]): string[] {
-  const fromKeywords = (narrative.keywords || []).map((k) => normalizeText(k)).filter(Boolean);
-  const fromTitle = normalizeText(narrative.titleRu)
-    .split(' ')
-    .filter((w) => w.length >= 4);
+  const fromKeywords = (narrative.keywords || [])
+    .flatMap((k) => normalizeText(k).split(' '))
+    .filter((term) => term.length >= 2);
 
-  return Array.from(new Set([...fromKeywords, ...fromTitle]));
+  return Array.from(new Set(fromKeywords));
 }
 
 function isRelevantToNarrative(title: string, narrativeTerms: string[]): boolean {
