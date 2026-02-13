@@ -27,6 +27,36 @@ type LiveCountryEventsResponse = {
   events: LiveCountryEvent[];
 };
 
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildNarrativeTerms(narrative: (typeof NARRATIVES)[number]): string[] {
+  const fromKeywords = (narrative.keywords || []).map((k) => normalizeText(k)).filter(Boolean);
+  const fromTitle = normalizeText(narrative.titleRu)
+    .split(' ')
+    .filter((w) => w.length >= 4);
+
+  return Array.from(new Set([...fromKeywords, ...fromTitle]));
+}
+
+function isRelevantToNarrative(title: string, narrativeTerms: string[]): boolean {
+  const normalizedTitle = normalizeText(title);
+  if (!normalizedTitle || narrativeTerms.length === 0) return false;
+
+  const matchCount = narrativeTerms.reduce((acc, term) => {
+    if (normalizedTitle.includes(term)) return acc + 1;
+    return acc;
+  }, 0);
+
+  return matchCount >= 1;
+}
+
 function stanceFromSentiment(sentiment: number): string {
   if (sentiment > 0.2) return 'pro_russia';
   if (sentiment < -0.2) return 'anti_russia';
@@ -136,9 +166,13 @@ function buildRichTimeline(
     stance: string;
   }>,
   liveEvents: LiveCountryEvent[],
+  narrativeTerms: string[],
 ) {
-  const enrichedFromLive = liveEvents
-    .filter((e) => Boolean(e.title) && Boolean(e.published_at))
+  const filteredLiveEvents = liveEvents.filter(
+    (e) => Boolean(e.title) && Boolean(e.published_at) && isRelevantToNarrative(e.title, narrativeTerms),
+  );
+
+  const enrichedFromLive = filteredLiveEvents
     .map((e, index) => {
       const sentiment = e.sentiment ?? 0;
       return {
@@ -192,8 +226,9 @@ export async function getCaseWorkspace(narrativeId: number) {
     narrative.countries.map((code) => fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=60&sort=impact`)),
   );
 
+  const narrativeTerms = buildNarrativeTerms(narrative);
   const liveEvents = eventPayloads.flatMap((payload) => payload?.events || []);
-  const timeline = buildRichTimeline(timelineBase, liveEvents);
+  const timeline = buildRichTimeline(timelineBase, liveEvents, narrativeTerms);
 
   const allNeighbors = getNeighbors(`narrative:${narrativeId}`).neighbors;
   const focusedNeighbors = allNeighbors.filter(
