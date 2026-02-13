@@ -31,6 +31,7 @@ export function GraphVisualizer() {
   const { state, navigate } = useGraph();
   const [error, setError] = useState<string | null>(null);
   const [neighbors, setNeighbors] = useState<NeighborsResponse['neighbors']>([]);
+  const [openedRelation, setOpenedRelation] = useState<string | null>(null);
 
   const graphNodeId = useMemo(() => {
     if (!state.focus) return null;
@@ -72,10 +73,16 @@ export function GraphVisualizer() {
     );
   }
 
-  const grouped = neighbors.reduce<Record<string, number>>((acc, n) => {
-    acc[n.relation] = (acc[n.relation] || 0) + 1;
+  const groupedNeighbors = neighbors.reduce<Record<string, NeighborsResponse['neighbors']>>((acc, n) => {
+    if (!acc[n.relation]) acc[n.relation] = [];
+    acc[n.relation].push(n);
     return acc;
   }, {});
+
+  const relationEntries = Object.entries(groupedNeighbors).map(([relation, items]) => ({
+    relation,
+    items: [...items].sort((a, b) => b.confidence - a.confidence),
+  }));
 
   return (
     <div className="p-4">
@@ -94,35 +101,49 @@ export function GraphVisualizer() {
 
       {!error && (
         <>
-          <div className="space-y-2 mb-4">
-            {Object.entries(grouped).map(([relation, count]) => (
-              <div key={relation} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50">
-                <span className="t-body text-zinc-300">{relationLabel(relation)}</span>
-                <span className="t-meta text-white font-semibold">{count} связи</span>
-              </div>
-            ))}
-            {neighbors.length === 0 && (
-              <div className="t-meta text-zinc-500">Связей пока нет</div>
-            )}
-          </div>
+          {relationEntries.length === 0 && (
+            <div className="t-meta text-zinc-500">Связей пока нет</div>
+          )}
 
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {neighbors.slice(0, 40).map((n, i) => (
-              <button
-                key={`${n.node.id}:${i}`}
-                className="w-full text-left p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 transition-colors"
-                onClick={() => {
-                  const [kind, rawId] = n.node.id.split(':');
-                  if (!kind || !rawId) return;
-                  if (kind === 'country') navigate('Country', rawId, { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
-                  if (kind === 'narrative') navigate('Narrative', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
-                  if (kind === 'article') navigate('Article', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
-                }}
-              >
-                <div className="t-meta text-zinc-500">{relationLabel(n.relation)} · уверенность: {n.confidence.toFixed(2)}</div>
-                <div className="t-body text-white line-clamp-2">{n.node.label}</div>
-              </button>
-            ))}
+          <div className="space-y-2 max-h-[28rem] overflow-y-auto">
+            {relationEntries.map(({ relation, items }) => {
+              const opened = openedRelation ? openedRelation === relation : relationEntries[0]?.relation === relation;
+              return (
+                <div key={relation} className="rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+                  <button
+                    onClick={() => setOpenedRelation((prev) => (prev === relation ? null : relation))}
+                    className="w-full text-left px-3 py-2 flex items-center justify-between hover:bg-zinc-800/70 transition-colors"
+                  >
+                    <span className="t-body text-zinc-200">{relationLabel(relation)}</span>
+                    <span className="t-meta text-zinc-300">{items.length} связи {opened ? '▾' : '▸'}</span>
+                  </button>
+
+                  {opened && (
+                    <div className="px-2 pb-2 space-y-2">
+                      {items.slice(0, 8).map((n, i) => (
+                        <button
+                          key={`${n.node.id}:${i}`}
+                          className="w-full text-left p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                          onClick={() => {
+                            const [kind, rawId] = n.node.id.split(':');
+                            if (!kind || !rawId) return;
+                            if (kind === 'country') navigate('Country', rawId, { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
+                            if (kind === 'narrative') navigate('Narrative', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
+                            if (kind === 'article') navigate('Article', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
+                          }}
+                        >
+                          <div className="t-meta text-zinc-500">уверенность: {n.confidence.toFixed(2)}</div>
+                          <div className="t-body text-white line-clamp-2">{n.node.label}</div>
+                        </button>
+                      ))}
+                      {items.length > 8 && (
+                        <div className="t-meta text-zinc-500 px-2">и ещё {items.length - 8} связей…</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
