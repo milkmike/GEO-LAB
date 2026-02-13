@@ -74,41 +74,85 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
   }, []);
 
   if (!triage) {
-    return (
-      <div className="px-4 py-3 t-body text-zinc-500">Подбираю главную тему…</div>
-    );
+    return <div className="px-4 py-3 t-body text-zinc-500">Подбираю главную тему…</div>;
   }
 
   const hero = triage.escalations[0];
   const next = triage.escalations.slice(1, 4);
-
   if (!hero) return null;
 
+  if (!landing) {
+    return (
+      <div className="rounded-xl g-panel px-3 py-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div className="g-kicker">С чего начать</div>
+            <div className="t-meta text-zinc-400">Выбери линию времени, которую хочешь изучить.</div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('Narrative', hero.narrativeId, { relation: 'signal_deck_open_case', fromType: 'Country', fromId: hero.countries[0] || 'N/A' })}
+              className="px-3 py-1.5 rounded-lg bg-cyan-300/90 text-black t-meta font-medium hover:bg-cyan-200"
+            >
+              Открыть главную линию
+            </button>
+            {next[0] && (
+              <button
+                onClick={() => navigate('Narrative', next[0].narrativeId, { relation: 'signal_deck_next_case', fromType: 'Country', fromId: next[0].countries[0] || 'N/A' })}
+                className="px-3 py-1.5 rounded-lg bg-zinc-900 text-zinc-200 t-meta border border-zinc-700 hover:border-cyan-600"
+              >
+                Открыть другую линию
+              </button>
+            )}
+          </div>
+        </div>
+
+        {next.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-zinc-800">
+            <div className="t-meta text-zinc-500 mb-1">Другие линии времени:</div>
+            <div className="flex gap-2 flex-wrap">
+              {next.map((item) => (
+                <button
+                  key={item.narrativeId}
+                  onClick={() => navigate('Narrative', item.narrativeId, { relation: 'signal_deck_pick', fromType: 'Country', fromId: item.countries[0] || 'N/A' })}
+                  className="t-meta px-2 py-1 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-cyan-600"
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className={`${landing ? 'p-4 md:p-6' : 'px-4 py-3'}`}>
+    <div className="p-4 md:p-6">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-2">
-          <div className="g-kicker">Главная повестка</div>
+          <div className="g-kicker">С чего начать</div>
           <div className="t-meta text-zinc-500">Качество данных: {triage.quality.status === 'ok' ? 'нормально' : 'нужно проверить'} · спорных совпадений: {triage.quality.aliasConflicts}</div>
         </div>
 
         <div className="rounded-2xl g-panel-strong p-4 mb-3">
-          <div className="g-kicker mb-1">Главная тема · уровень споров {hero.divergence}%</div>
+          <div className="g-kicker mb-1">Главная линия времени · уровень споров {hero.divergence}%</div>
           <h2 className="t-display text-white mb-2">{hero.title}</h2>
-          <p className="t-body text-zinc-400 mb-4">Это лучший сюжет для старта: открой и посмотри кто участвует, что произошло и на чём основаны выводы.</p>
-          <div className="flex gap-2">
+          <p className="t-body text-zinc-400 mb-3">Начни с этой линии: она лучше всего объясняет, что сейчас происходит и почему это важно.</p>
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => navigate('Narrative', hero.narrativeId, { relation: 'signal_deck_open_case', fromType: 'Country', fromId: hero.countries[0] || 'N/A' })}
               className="px-3 py-2 rounded-lg bg-cyan-300/90 text-black t-body font-medium hover:bg-cyan-200"
             >
-Открыть сюжет
+              Открыть главную линию
             </button>
             {next[0] && (
               <button
                 onClick={() => navigate('Narrative', next[0].narrativeId, { relation: 'signal_deck_next_case', fromType: 'Country', fromId: next[0].countries[0] || 'N/A' })}
                 className="px-3 py-2 rounded-lg bg-zinc-900 text-zinc-200 t-body border border-zinc-700 hover:border-cyan-600"
               >
-Открыть следующий сюжет
+                Открыть другую линию
               </button>
             )}
           </div>
@@ -121,9 +165,9 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
               onClick={() => navigate('Narrative', item.narrativeId, { relation: 'signal_deck_pick', fromType: 'Country', fromId: item.countries[0] || 'N/A' })}
               className="text-left rounded-xl g-panel p-3 hover:border-cyan-700"
             >
-              <div className="t-meta text-orange-300 mb-1">{item.divergence}%</div>
+              <div className="t-meta text-orange-300 mb-1">уровень споров {item.divergence}%</div>
               <div className="t-body text-white line-clamp-2">{item.title}</div>
-              <div className="t-meta text-zinc-500 mt-1">Сюжет №{item.narrativeId}</div>
+              <div className="t-meta text-zinc-500 mt-1">Линия времени №{item.narrativeId}</div>
             </button>
           ))}
         </div>
