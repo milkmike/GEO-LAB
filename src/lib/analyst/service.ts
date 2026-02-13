@@ -48,12 +48,14 @@ function isRelevantToNarrative(title: string, narrativeTerms: string[]): boolean
   const normalizedTitle = normalizeText(title);
   if (!normalizedTitle || narrativeTerms.length === 0) return false;
 
-  const matchCount = narrativeTerms.reduce((acc, term) => {
-    if (normalizedTitle.includes(term)) return acc + 1;
-    return acc;
-  }, 0);
+  const matches = narrativeTerms.filter((term) => normalizedTitle.includes(term));
+  if (matches.length === 0) return false;
 
-  return matchCount >= 1;
+  const hasSpecificLongTerm = matches.some((term) => term.length >= 6);
+  const hasLatinToken = matches.some((term) => /[a-z]/i.test(term));
+
+  if (hasSpecificLongTerm || hasLatinToken) return true;
+  return matches.length >= 2;
 }
 
 function stanceFromSentiment(sentiment: number): string {
