@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { fetchSubgraph } from '@/lib/graph/client';
 import type { SubgraphResponse } from '@/lib/graph/types';
@@ -35,6 +35,9 @@ function colorByKind(kind: string): string {
 export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   const [subgraph, setSubgraph] = useState<SubgraphResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const fgRef = useRef<{ zoomToFit: (ms?: number, px?: number) => void } | null>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!nodeId) return;
@@ -47,6 +50,21 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
         setError(e instanceof Error ? e.message : '3D graph load failed');
       });
   }, [nodeId]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      setSize({ width: el.clientWidth, height: el.clientHeight });
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+
+    return () => ro.disconnect();
+  }, []);
 
   const graphData = useMemo(() => {
     if (!subgraph) return null;
@@ -69,6 +87,18 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
     return { nodes, links };
   }, [subgraph]);
 
+  useEffect(() => {
+    if (!fgRef.current || !graphData) return;
+    const t = setTimeout(() => {
+      try {
+        fgRef.current.zoomToFit(400, 40);
+      } catch {
+        // noop
+      }
+    }, 200);
+    return () => clearTimeout(t);
+  }, [graphData]);
+
   if (!nodeId) {
     return <div className="p-3 text-xs text-zinc-500">Открой кейс, чтобы увидеть 3D-граф.</div>;
   }
@@ -82,25 +112,30 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full flex flex-col">
       <div className="px-3 pt-2 pb-1 text-xs text-zinc-500">
         3D subgraph · {graphData.nodes.length} nodes / {graphData.links.length} links
       </div>
-      <div className="h-[calc(100%-24px)]">
-        {/* @ts-expect-error dynamic import generic type */}
-        <ForceGraph3D
-          graphData={graphData}
-          backgroundColor="#09090b"
-          nodeLabel={(n: GraphNode) => `${n.name} (${n.kind})`}
-          nodeColor={(n: GraphNode) => n.color}
-          nodeVal={(n: GraphNode) => n.val}
-          linkColor={(l: GraphLink) => (l.confidence >= 0.9 ? '#a1a1aa' : '#52525b')}
-          linkWidth={(l: GraphLink) => Math.max(0.3, l.confidence * 1.5)}
-          linkOpacity={0.55}
-          showNavInfo={false}
-          enableNodeDrag={true}
-          cooldownTicks={80}
-        />
+      <div ref={containerRef} className="flex-1 min-h-0">
+        {size.width > 0 && size.height > 0 && (
+          // @ts-expect-error dynamic import generic type
+          <ForceGraph3D
+            ref={fgRef}
+            width={size.width}
+            height={size.height}
+            graphData={graphData}
+            backgroundColor="#09090b"
+            nodeLabel={(n: GraphNode) => `${n.name} (${n.kind})`}
+            nodeColor={(n: GraphNode) => n.color}
+            nodeVal={(n: GraphNode) => n.val}
+            linkColor={(l: GraphLink) => (l.confidence >= 0.9 ? '#a1a1aa' : '#52525b')}
+            linkWidth={(l: GraphLink) => Math.max(0.5, l.confidence * 2)}
+            linkOpacity={0.65}
+            showNavInfo={true}
+            enableNodeDrag={true}
+            cooldownTicks={90}
+          />
+        )}
       </div>
     </div>
   );
