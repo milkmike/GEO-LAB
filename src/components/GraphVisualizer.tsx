@@ -6,6 +6,7 @@ import { getCountry } from '@/mock/data';
 import { fetchNeighbors, focusToGraphNodeId } from '@/lib/graph/client';
 import type { NeighborsResponse } from '@/lib/graph/types';
 import type { NodeType } from '@/types/ontology';
+import { relationLabel } from '@/lib/plain-language';
 
 function NodeTypeLabel({ type, id }: { type: NodeType; id: string | number }) {
   switch (type) {
@@ -92,7 +93,7 @@ export function GraphVisualizer() {
           <div className="space-y-2 mb-4">
             {Object.entries(grouped).map(([relation, count]) => (
               <div key={relation} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50">
-                <span className="t-body text-zinc-300">{relation}</span>
+                <span className="t-body text-zinc-300">{relationLabel(relation)}</span>
                 <span className="t-body text-white font-semibold">{count}</span>
               </div>
             ))}
@@ -114,7 +115,7 @@ export function GraphVisualizer() {
                   if (kind === 'article') navigate('Article', Number(rawId), { relation: n.relation, fromType: state.focus!.nodeType, fromId: state.focus!.nodeId });
                 }}
               >
-                <div className="t-meta text-zinc-500">{n.relation} · уверенность: {n.confidence.toFixed(2)}</div>
+                <div className="t-meta text-zinc-500">{relationLabel(n.relation)} · уверенность: {n.confidence.toFixed(2)}</div>
                 <div className="t-body text-white line-clamp-2">{n.node.label}</div>
               </button>
             ))}

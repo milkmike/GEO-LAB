@@ -18,6 +18,7 @@ import {
 } from '@/mock/data';
 import type { Article, VoxComment } from '@/types/ontology';
 import { fetchBrief, fetchCase, type BriefResponse, type CaseResponse } from '@/lib/analyst/client';
+import { entityKindLabel, narrativeStatusLabel, relationLabel } from '@/lib/plain-language';
 
 function SentimentBadge({ value }: { value: number }) {
   const color = value > 0.3 ? 'text-green-400' : value < -0.3 ? 'text-red-400' : 'text-zinc-400';
@@ -40,20 +41,6 @@ function StanceBadge({ stance }: { stance: string }) {
       {labels[stance] || stance}
     </span>
   );
-}
-
-function narrativeStatusLabel(status: string): string {
-  if (status === 'active') return 'активно обсуждается';
-  if (status === 'fading') return 'обсуждение стихает';
-  return status;
-}
-
-function entityKindLabel(kind: string): string {
-  if (kind === 'person') return 'человек';
-  if (kind === 'org') return 'организация';
-  if (kind === 'place') return 'место';
-  if (kind === 'event') return 'событие';
-  return kind;
 }
 
 function ArticleRow({ article, onNavigate }: { article: Article; onNavigate: () => void }) {
@@ -103,11 +90,11 @@ function CountryDetail({ countryId }: { countryId: string }) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <span className="text-4xl">{country.flag}</span>
+        <span className="t-display">{country.flag}</span>
         <div>
           <h2 className="t-display font-bold text-white">{country.nameRu}</h2>
           <div className="t-body text-zinc-400">
-Уровень {country.tier} · {country.region}
+Уровень внимания {country.tier} · {country.region}
             {temp && <span className="ml-2">· 🌡 {temp.value}° ({temp.delta > 0 ? '+' : ''}{temp.delta})</span>}
           </div>
         </div>
@@ -229,7 +216,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
               'bg-yellow-500/20 text-yellow-300'
             }`}>{narrativeStatusLabel(narrative.status)}</span>
             <span>Уровень споров: {narrative.divergenceScore}%</span>
-            {workspace && <span>Карта связей: {workspace.graphStats.nodes} узлов / {workspace.graphStats.edges} связей</span>}
+            {workspace && <span>Карта связей: {workspace.graphStats.nodes} узлов и {workspace.graphStats.edges} связей</span>}
           </div>
         </div>
         <button
@@ -274,7 +261,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
             {workspace.entities.slice(0, 8).map((e) => (
               <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50">
                 <div className="t-body text-white">{e.label}</div>
-                <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {e.relation} · уверенность: {e.confidence.toFixed(2)}</div>
+                <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {relationLabel(e.relation)} · уверенность: {e.confidence.toFixed(2)}</div>
               </div>
             ))}
           </div>
@@ -420,7 +407,7 @@ export function DetailPanel() {
   if (!state.focus) {
     return (
       <div className="p-8 text-center">
-        <div className="text-4xl mb-3">🐙</div>
+        <div className="t-display mb-3">🐙</div>
         <div className="text-zinc-500 t-body">
           Выберите объект на графе для детального просмотра
         </div>

@@ -66,7 +66,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
         setDragPositions({});
       })
       .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : 'graph load failed');
+        setError(e instanceof Error ? e.message : 'Не удалось загрузить карту связей');
       });
   }, [nodeId]);
 
@@ -202,15 +202,15 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   return (
     <div className="h-full w-full flex flex-col">
       <div className="px-3 pt-2 pb-1 t-meta text-zinc-500 flex items-center justify-between gap-2 flex-wrap">
-        <span>Режим: {renderMode.toUpperCase()} · узлов: {filtered.nodes.length} · связей: {filtered.links.length}</span>
+        <span>Режим: {renderMode === 'svg' ? 'простой' : renderMode === '2d' ? 'схема' : 'объём'} · узлов: {filtered.nodes.length} · связей: {filtered.links.length}</span>
         <div className="flex gap-1">
-          <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode === 'svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>SVG</button>
-          <button onClick={() => setRenderMode('2d')} className={`px-2 py-0.5 rounded ${renderMode === '2d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>2D</button>
-          <button onClick={() => setRenderMode('3d')} className={`px-2 py-0.5 rounded ${renderMode === '3d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>3D</button>
+          <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode === 'svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>Простой</button>
+          <button onClick={() => setRenderMode('2d')} className={`px-2 py-0.5 rounded ${renderMode === '2d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>Схема</button>
+          <button onClick={() => setRenderMode('3d')} className={`px-2 py-0.5 rounded ${renderMode === '3d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>Объём</button>
         </div>
       </div>
 
-      <div className="px-3 pb-2 text-[11px] text-zinc-500 flex items-center gap-2 flex-wrap">
+      <div className="px-3 pb-2 t-meta text-zinc-500 flex items-center gap-2 flex-wrap">
         <span>Показывать связи с уверенностью ≥</span>
         <input
           type="range"

@@ -3,6 +3,7 @@
 import { useGraph } from '@/lib/graph-provider';
 import { COUNTRIES, NARRATIVES } from '@/mock/data';
 import type { GraphFocus } from '@/types/ontology';
+import { relationLabel } from '@/lib/plain-language';
 
 function focusLabel(f: GraphFocus): string {
   switch (f.nodeType) {
@@ -24,19 +25,7 @@ function focusLabel(f: GraphFocus): string {
 
 function viaLabel(via: GraphFocus['via']): string | null {
   if (!via) return null;
-  const relations: Record<string, string> = {
-    has_narratives: '→ сюжеты',
-    has_articles: '→ статьи',
-    has_channels: '→ каналы',
-    has_comments: '→ комменты',
-    has_temperature: '→ температура',
-    has_events: '→ события',
-    contains_articles: '→ статьи',
-    published_by: '→ канал',
-    belongs_to_narrative: '→ сюжет',
-    comments_on: '→ статья',
-  };
-  return relations[via.relation] || `→ ${via.relation}`;
+  return `→ ${relationLabel(via.relation)}`;
 }
 
 export function Breadcrumbs() {

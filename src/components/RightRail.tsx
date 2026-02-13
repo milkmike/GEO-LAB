@@ -6,14 +6,7 @@ import { GraphVisualizer } from '@/components/GraphVisualizer';
 import { Graph3DPanel } from '@/components/Graph3DPanel';
 import { fetchCase, type CaseResponse } from '@/lib/analyst/client';
 import { focusToGraphNodeId } from '@/lib/graph/client';
-
-function entityKindLabel(kind: string): string {
-  if (kind === 'person') return 'человек';
-  if (kind === 'org') return 'организация';
-  if (kind === 'place') return 'место';
-  if (kind === 'event') return 'событие';
-  return kind;
-}
+import { entityKindLabel, relationLabel } from '@/lib/plain-language';
 
 export function RightRail() {
   const { state } = useGraph();
@@ -77,12 +70,12 @@ export function RightRail() {
               {workspace.entities.slice(0, 12).map((e) => (
                 <div key={e.id} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800">
                   <div className="t-body text-white line-clamp-2">{e.label}</div>
-                  <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {e.relation} · уверенность: {e.confidence.toFixed(2)}</div>
-                  <div className="text-[11px] text-zinc-600 line-clamp-2">{e.evidence.join(', ')}</div>
+                  <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {relationLabel(e.relation)} · уверенность: {e.confidence.toFixed(2)}</div>
+                  <div className="t-meta text-zinc-600 line-clamp-2">Основание: {e.evidence.join(', ')}</div>
                 </div>
               ))}
               {workspace.entities.length === 0 && (
-                <div className="t-meta text-zinc-500">Пока нет извлечённых evidence-связей.</div>
+                <div className="t-meta text-zinc-500">Пока нет подтверждённых связей по этому сюжету.</div>
               )}
             </div>
           )}
