@@ -142,6 +142,8 @@ function ActiveCaseHeader() {
 }
 
 export default function Home() {
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <Suspense fallback={null}>
@@ -156,6 +158,13 @@ export default function Home() {
           <p className="text-xs text-zinc-500">Ontology Graph · Прототип связей виджетов</p>
         </div>
         <div className="ml-auto flex items-center gap-3 text-xs text-zinc-500">
+          <button
+            onClick={() => setLeftCollapsed((v) => !v)}
+            className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+            title="Toggle left panel"
+          >
+            {leftCollapsed ? '☰ Show rail' : '☰ Hide rail'}
+          </button>
           <span className="px-2 py-1 rounded bg-zinc-800">🧬 Ontology v1</span>
           <span className="px-2 py-1 rounded bg-zinc-800">8 стран · 5 сюжетов · 10 статей</span>
           <GraphHealthBadge />
@@ -174,11 +183,15 @@ export default function Home() {
       {/* Main content — 3-column layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Countries + Narratives */}
-        <div className="w-72 border-r border-zinc-800 overflow-y-auto flex-shrink-0">
-          <CountryGrid />
-          <div className="border-t border-zinc-800">
-            <NarrativeList />
-          </div>
+        <div className={`${leftCollapsed ? 'w-0 border-r-0' : 'w-72 border-r'} border-zinc-800 overflow-hidden flex-shrink-0 transition-all duration-200`}>
+          {!leftCollapsed && (
+            <div className="h-full overflow-y-auto">
+              <CountryGrid />
+              <div className="border-t border-zinc-800">
+                <NarrativeList />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Center: Active Case Workspace */}
