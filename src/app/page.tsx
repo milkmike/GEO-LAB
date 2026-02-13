@@ -5,11 +5,12 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { CountryGrid } from '@/components/CountryGrid';
 import { NarrativeList } from '@/components/NarrativeList';
 import { DetailPanel } from '@/components/DetailPanel';
-import { GraphVisualizer } from '@/components/GraphVisualizer';
+import { RightRail } from '@/components/RightRail';
 import { useGraph } from '@/lib/graph-provider';
 import { useUrlSync } from '@/lib/url-sync';
 import { fetchGraphHealth } from '@/lib/graph/client';
 import { fetchTriage, type TriageResponse } from '@/lib/analyst/client';
+import { getCountry, getNarrative } from '@/mock/data';
 
 function UrlSyncWrapper() {
   useUrlSync();
@@ -98,12 +99,12 @@ function AnalystTriageBar() {
         <div className="text-xs text-zinc-400">🎯 Analyst Home · triage</div>
         <div className="text-xs text-zinc-500">quality: {triage.quality.status} · alias conflicts {triage.quality.aliasConflicts}</div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {triage.escalations.slice(0, 4).map((item) => (
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {triage.escalations.slice(0, 6).map((item) => (
           <button
             key={item.narrativeId}
             onClick={() => navigate('Narrative', item.narrativeId, { relation: 'triage_open_case', fromType: 'Country', fromId: item.countries[0] || 'N/A' })}
-            className="text-left p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800"
+            className="text-left p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 min-w-[300px]"
           >
             <div className="text-xs text-orange-300">⚡ escalation {item.divergence}%</div>
             <div className="text-sm text-white line-clamp-1">{item.title}</div>
@@ -111,6 +112,31 @@ function AnalystTriageBar() {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ActiveCaseHeader() {
+  const { state } = useGraph();
+
+  if (!state.focus || state.focus.nodeType !== 'Narrative') {
+    return null;
+  }
+
+  const n = getNarrative(Number(state.focus.nodeId));
+  if (!n) return null;
+
+  const countryLabels = n.countries
+    .map((cid) => getCountry(cid))
+    .filter(Boolean)
+    .map((c) => `${c!.flag} ${c!.nameRu}`)
+    .join(' · ');
+
+  return (
+    <div className="sticky top-0 z-10 mb-3 rounded-xl border border-zinc-800 bg-zinc-950/95 px-3 py-2 backdrop-blur">
+      <div className="text-xs text-zinc-500">Active Case</div>
+      <div className="text-sm text-white font-semibold line-clamp-1">{n.titleRu}</div>
+      <div className="text-xs text-zinc-500">{countryLabels} · divergence {n.divergenceScore}%</div>
     </div>
   );
 }
@@ -155,14 +181,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Center: Detail Panel */}
+        {/* Center: Active Case Workspace */}
         <div className="flex-1 overflow-y-auto p-4">
+          <ActiveCaseHeader />
           <DetailPanel />
         </div>
 
-        {/* Right: Graph Visualizer */}
+        {/* Right: Graph / Evidence */}
         <div className="w-64 border-l border-zinc-800 overflow-y-auto flex-shrink-0">
-          <GraphVisualizer />
+          <RightRail />
         </div>
       </div>
     </div>
