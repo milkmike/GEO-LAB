@@ -214,64 +214,85 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
     .join(', ');
 
   const simpleSummary = brief?.bullets?.[0] || `Сейчас в центре внимания тема: ${narrative.titleRu}.`;
-  const simpleWhy = narrative.divergenceScore >= 70
-    ? 'Вокруг этой темы много разных мнений, поэтому важно следить за фактами.'
-    : 'Тема развивается спокойно, но может повлиять на отношения стран.';
+
+  const timelineItems = workspace
+    ? workspace.timeline.slice(0, 12).map((a) => ({
+        id: a.articleId,
+        title: a.title,
+        source: a.source,
+        publishedAt: a.publishedAt,
+        sentiment: a.sentiment,
+        stance: a.stance,
+      }))
+    : articles.slice(0, 12).map((a) => ({
+        id: a.id,
+        title: a.title,
+        source: a.source,
+        publishedAt: a.publishedAt,
+        sentiment: a.sentiment,
+        stance: a.stance,
+      }));
 
   return (
     <div className="space-y-5">
-      <div className="g-panel rounded-2xl p-4 space-y-3">
-        <div className="g-kicker">Сюжет простыми словами</div>
+      <div className="g-panel rounded-2xl p-4 space-y-2">
+        <div className="g-kicker">Главный сюжет</div>
         <h2 className="t-display font-semibold text-white">{narrative.titleRu}</h2>
+        <p className="t-body text-zinc-300">{simpleSummary}</p>
         <div className="flex flex-wrap gap-2 t-meta text-zinc-400">
           <span className={`px-2 py-0.5 rounded-full ${
             narrative.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
           }`}>{narrativeStatusLabel(narrative.status)}</span>
-          <span>Уровень споров: {narrative.divergenceScore}%</span>
           <span>Страны: {countriesPlain}</span>
+          <span>Уровень споров: {narrative.divergenceScore}%</span>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-3">
-        <section className="g-panel rounded-xl p-3">
-          <h3 className="t-body text-white font-semibold mb-1">Что случилось</h3>
-          <p className="t-body text-zinc-300">{simpleSummary}</p>
-        </section>
+      <section className="g-panel rounded-2xl p-4">
+        <div className="flex items-end justify-between mb-3">
+          <div>
+            <div className="g-kicker">Главная ось сюжета</div>
+            <h3 className="t-body text-white font-semibold">Вертикальная лента событий</h3>
+          </div>
+          <div className="t-meta text-zinc-500">Сверху новое, ниже более раннее</div>
+        </div>
 
-        <section className="g-panel rounded-xl p-3">
-          <h3 className="t-body text-white font-semibold mb-1">Почему это важно</h3>
-          <p className="t-body text-zinc-300">{simpleWhy}</p>
-        </section>
-      </div>
+        <div className="space-y-0">
+          {timelineItems.map((item, i) => {
+            const isLast = i === timelineItems.length - 1;
+            return (
+              <div key={item.id} className="relative pl-8 pb-4">
+                <span className="absolute left-1.5 top-1.5 h-3 w-3 rounded-full bg-cyan-300 ring-4 ring-cyan-500/20" />
+                {!isLast && <span className="absolute left-[11px] top-5 bottom-0 w-px bg-zinc-700" />}
 
-      <div>
-        <h3 className="t-body font-semibold text-zinc-400 mb-2">Участники сюжета</h3>
-        <div className="flex gap-2 flex-wrap">
-          {narrative.countries.map(cid => {
-            const c = getCountry(cid);
-            return c ? (
-              <button
-                key={cid}
-                onClick={() => navigate('Country', cid, { relation: 'spans_countries', fromType: 'Narrative', fromId: narrativeId })}
-                className="px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 bg-zinc-800/50 t-body text-white transition-colors"
-              >
-                {c.flag} {c.nameRu}
-              </button>
-            ) : null;
+                <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 p-3">
+                  <div className="t-body text-white">{item.title}</div>
+                  <div className="t-meta text-zinc-500 mt-1">
+                    {new Date(item.publishedAt).toLocaleDateString('ru')} · {item.source}
+                  </div>
+                  <div className="t-meta text-zinc-400 mt-1">
+                    Тон публикации: <SentimentBadge value={item.sentiment} /> · <StanceBadge stance={String(item.stance)} />
+                  </div>
+                  <button
+                    onClick={() => navigate('Article', item.id, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
+                    className="mt-2 t-meta px-2 py-1 rounded border border-zinc-700 hover:border-zinc-500 text-zinc-300"
+                  >
+                    Открыть материал
+                  </button>
+                </div>
+              </div>
+            );
           })}
+
+          {timelineItems.length === 0 && (
+            <div className="t-body text-zinc-500">Пока нет событий для этой ленты.</div>
+          )}
         </div>
-      </div>
+      </section>
 
-      <div className="flex flex-wrap gap-1.5">
-        {narrative.keywords.map(kw => (
-          <span key={kw} className="t-meta px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">{kw}</span>
-        ))}
-      </div>
-
-      {/* Entities + Evidence */}
       {workspace && workspace.entities.length > 0 && (
-        <div>
-          <h3 className="t-body font-semibold text-zinc-400 mb-2">🧩 Кто участвует и чем это подтверждается</h3>
+        <section className="g-panel rounded-2xl p-4">
+          <h3 className="t-body font-semibold text-zinc-300 mb-2">Чем это подтверждается</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {workspace.entities.slice(0, 8).map((e) => (
               <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50">
@@ -280,62 +301,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Timeline */}
-      {workspace && workspace.timeline.length > 0 && (
-        <div>
-          <h3 className="t-body font-semibold text-zinc-400 mb-2">🕒 Хронология событий по сюжету</h3>
-          <div className="space-y-1">
-            {workspace.timeline.slice(0, 12).map((a) => (
-              <ArticleRow
-                key={a.articleId}
-                article={{
-                  type: 'Article',
-                  id: a.articleId,
-                  title: a.title,
-                  url: '#',
-                  source: a.source,
-                  channelId: 0,
-                  countryId: narrative.countries[0],
-                  narrativeId,
-                  publishedAt: a.publishedAt,
-                  sentiment: a.sentiment,
-                  stance: a.stance as 'pro_russia' | 'neutral' | 'anti_russia',
-                  language: 'ru',
-                }}
-                onNavigate={() => navigate('Article', a.articleId, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Brief */}
-      {brief && (
-        <div className="p-3 rounded-xl border border-zinc-700 bg-zinc-900/80">
-          <h3 className="t-body font-semibold text-zinc-300 mb-2">📝 Краткая сводка по сюжету</h3>
-          <ul className="list-disc list-inside space-y-1 t-body text-zinc-300">
-            {brief.bullets.map((b, i) => <li key={i}>{b}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {/* Articles fallback */}
-      {articles.length > 0 && !workspace && (
-        <div>
-          <h3 className="t-body font-semibold text-zinc-400 mb-2">📄 Статьи ({articles.length})</h3>
-          <div className="space-y-1">
-            {articles.map(a => (
-              <ArticleRow
-                key={a.id}
-                article={a}
-                onNavigate={() => navigate('Article', a.id, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
-              />
-            ))}
-          </div>
-        </div>
+        </section>
       )}
     </div>
   );
