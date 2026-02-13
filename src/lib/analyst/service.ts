@@ -126,7 +126,7 @@ export async function getTriageData() {
   };
 }
 
-function mergeTimelineWithLive(
+function buildRichTimeline(
   baseTimeline: Array<{
     articleId: number;
     title: string;
@@ -137,26 +137,35 @@ function mergeTimelineWithLive(
   }>,
   liveEvents: LiveCountryEvent[],
 ) {
-  if (!liveEvents.length) return baseTimeline;
-
-  const sortedLive = [...liveEvents]
+  const enrichedFromLive = liveEvents
     .filter((e) => Boolean(e.title) && Boolean(e.published_at))
-    .sort((a, b) => +new Date(b.published_at || 0) - +new Date(a.published_at || 0));
+    .map((e, index) => {
+      const sentiment = e.sentiment ?? 0;
+      return {
+        articleId: 900000 + index,
+        title: e.title,
+        source: e.source || 'Источник не указан',
+        publishedAt: e.published_at || new Date().toISOString(),
+        sentiment,
+        stance: stanceFromSentiment(sentiment),
+      };
+    });
 
-  return baseTimeline.map((item, index) => {
-    const live = sortedLive[index];
-    if (!live) return item;
+  const merged = [...baseTimeline, ...enrichedFromLive].sort(
+    (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt),
+  );
 
-    const sentiment = live.sentiment ?? item.sentiment;
-    return {
-      ...item,
-      title: live.title || item.title,
-      source: live.source || item.source,
-      publishedAt: live.published_at || item.publishedAt,
-      sentiment,
-      stance: stanceFromSentiment(sentiment),
-    };
-  });
+  const seen = new Set<string>();
+  const unique: typeof merged = [];
+
+  for (const item of merged) {
+    const dedupeKey = `${item.title}__${item.publishedAt}`.toLowerCase();
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    unique.push(item);
+  }
+
+  return unique.slice(0, 80);
 }
 
 export async function getCaseWorkspace(narrativeId: number) {
@@ -169,7 +178,7 @@ export async function getCaseWorkspace(narrativeId: number) {
   const timelineBase = ARTICLES
     .filter((a) => a.narrativeId === narrativeId)
     .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt))
-    .slice(0, 20)
+    .slice(0, 40)
     .map((a) => ({
       articleId: a.id,
       title: a.title,
@@ -180,15 +189,15 @@ export async function getCaseWorkspace(narrativeId: number) {
     }));
 
   const eventPayloads = await Promise.all(
-    narrative.countries.map((code) => fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=25&sort=impact`)),
+    narrative.countries.map((code) => fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=60&sort=impact`)),
   );
 
   const liveEvents = eventPayloads.flatMap((payload) => payload?.events || []);
-  const timeline = mergeTimelineWithLive(timelineBase, liveEvents);
+  const timeline = buildRichTimeline(timelineBase, liveEvents);
 
   const neighbors = getNeighbors(`narrative:${narrativeId}`).neighbors
     .filter((n) => n.node.id.startsWith('person:') || n.node.id.startsWith('org:') || n.node.id.startsWith('place:'))
-    .slice(0, 12)
+    .slice(0, 30)
     .map((n) => ({
       id: n.node.id,
       label: n.node.label,

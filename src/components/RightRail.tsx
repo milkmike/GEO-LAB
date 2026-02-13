@@ -76,7 +76,7 @@ export function RightRail() {
           )}
           {workspace && (
             <div className="space-y-2">
-              {workspace.entities.slice(0, 12).map((e) => (
+              {workspace.entities.slice(0, 24).map((e) => (
                 <div key={e.id} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800">
                   <div className="t-body text-white line-clamp-2">{e.label}</div>
                   <div className="t-meta text-zinc-500">{entityKindLabel(e.kind)} · связь: {relationLabel(e.relation)} · уверенность: {e.confidence.toFixed(2)}</div>

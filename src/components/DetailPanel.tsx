@@ -147,7 +147,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
         cta: 'Открыть материал',
         isTurningPoint: Math.abs(a.sentiment) >= 0.6,
-      }))).slice(0, 14);
+      }))).slice(0, 30);
 
   const rawIntro = brief?.bullets?.[0] || `Сюжет: ${narrative.titleRu}`;
   const intro = rawIntro
@@ -180,7 +180,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         <section className="pt-2 border-t border-zinc-800">
           <h3 className="t-body text-zinc-300 font-semibold mb-2">Кто участвует</h3>
           <div className="flex flex-wrap gap-2">
-            {workspace.entities.slice(0, 10).map((e) => (
+            {workspace.entities.slice(0, 18).map((e) => (
               <span key={e.id} className="t-meta px-2 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-zinc-300">
                 {e.label}
               </span>
