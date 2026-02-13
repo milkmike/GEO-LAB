@@ -28,6 +28,20 @@ export interface BriefResponse {
   generatedAt: string;
 }
 
+export interface CountryWorkspaceResponse {
+  country: {
+    id: string;
+    name: string;
+    flag: string;
+    temperature: number | null;
+    divergence: number;
+    articleCount: number;
+    updatedAt: string | null;
+  };
+  timeline: Array<{ articleId: number; title: string; source: string; publishedAt: string; sentiment: number; stance: string }>;
+  generatedAt: string;
+}
+
 export async function fetchTriage(): Promise<TriageResponse> {
   const r = await fetch('/api/analyst/triage', { cache: 'no-store' });
   if (!r.ok) throw new Error(`triage ${r.status}`);
@@ -43,5 +57,11 @@ export async function fetchCase(narrativeId: number): Promise<CaseResponse> {
 export async function fetchBrief(narrativeId: number): Promise<BriefResponse> {
   const r = await fetch(`/api/analyst/brief?narrativeId=${narrativeId}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`brief ${r.status}`);
+  return r.json();
+}
+
+export async function fetchCountryWorkspace(code: string): Promise<CountryWorkspaceResponse> {
+  const r = await fetch(`/api/analyst/country?code=${encodeURIComponent(code)}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`country ${r.status}`);
   return r.json();
 }

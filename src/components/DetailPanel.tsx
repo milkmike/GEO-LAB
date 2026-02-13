@@ -17,7 +17,14 @@ import {
   CHANNELS,
 } from '@/mock/data';
 import type { VoxComment } from '@/types/ontology';
-import { fetchBrief, fetchCase, type BriefResponse, type CaseResponse } from '@/lib/analyst/client';
+import {
+  fetchBrief,
+  fetchCase,
+  fetchCountryWorkspace,
+  type BriefResponse,
+  type CaseResponse,
+  type CountryWorkspaceResponse,
+} from '@/lib/analyst/client';
 import { narrativeStatusLabel } from '@/lib/plain-language';
 import { TimelineSpine, type SpineItem } from '@/components/TimelineSpine';
 
@@ -45,10 +52,15 @@ function CommentRow({ comment }: { comment: VoxComment }) {
 function CountryDetail({ countryId }: { countryId: string }) {
   const { navigate } = useGraph();
   const country = getCountry(countryId);
+  const [workspace, setWorkspace] = useState<CountryWorkspaceResponse | null>(null);
+
+  useEffect(() => {
+    fetchCountryWorkspace(countryId).then(setWorkspace).catch(() => null);
+  }, [countryId]);
+
   if (!country) return <div className="p-4 text-zinc-500">Страна не найдена</div>;
 
   const narratives = getNarrativesForCountry(countryId);
-  const articles = getArticlesForCountry(countryId);
   const channels = getChannelsForCountry(countryId);
   const comments = getCommentsForCountry(countryId);
   const events = getEventsForCountry(countryId);
@@ -63,8 +75,8 @@ function CountryDetail({ countryId }: { countryId: string }) {
     isTurningPoint: e.impact === 'high',
   }));
 
-  const fromArticles: SpineItem[] = articles.map((a) => ({
-    id: `article:${a.id}`,
+  const liveItems: SpineItem[] = (workspace?.timeline || []).map((a) => ({
+    id: `article:${a.articleId}`,
     title: a.title,
     date: a.publishedAt,
     meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
@@ -72,9 +84,11 @@ function CountryDetail({ countryId }: { countryId: string }) {
     isTurningPoint: Math.abs(a.sentiment) >= 0.6,
   }));
 
-  const timelineItems: SpineItem[] = [...fromEvents, ...fromArticles].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
+  const timelineItems: SpineItem[] = [...fromEvents, ...liveItems]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 220);
+
+  const shownArticlesCount = workspace?.timeline?.length || 0;
 
   return (
     <div className="space-y-4">
@@ -83,10 +97,12 @@ function CountryDetail({ countryId }: { countryId: string }) {
         <h2 className="t-display text-white font-semibold">{country.flag} {country.nameRu}</h2>
         <p className="t-body text-zinc-400">
           {country.region} · уровень внимания {country.tier}
-          {temp ? ` · индекс: ${temp.value} (${temp.delta > 0 ? '+' : ''}${temp.delta})` : ''}
+          {workspace?.country.temperature !== null && workspace?.country.temperature !== undefined
+            ? ` · индекс: ${Math.round(workspace.country.temperature)}`
+            : temp ? ` · индекс: ${temp.value} (${temp.delta > 0 ? '+' : ''}${temp.delta})` : ''}
         </p>
         <div className="t-meta text-zinc-500 mt-1">
-          {narratives.length} сюжетов · {articles.length} материалов · {channels.length} каналов · {comments.length} комментариев
+          {narratives.length} сюжетов · {shownArticlesCount} материалов · {channels.length} каналов · {comments.length} комментариев
         </div>
       </div>
 

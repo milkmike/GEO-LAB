@@ -158,6 +158,68 @@ export async function getTriageData() {
   };
 }
 
+export async function getCountryWorkspace(countryCode: string) {
+  const code = countryCode.toUpperCase();
+  const country = getCountry(code);
+  if (!country) return null;
+
+  const countryMap = await loadCountryMap(30);
+  const liveCountry = countryMap.get(code);
+
+  const livePayload = await fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=200&sort=date`);
+  const liveEvents = (livePayload?.events || [])
+    .filter((e) => Boolean(e.title) && Boolean(e.published_at))
+    .map((e, index) => {
+      const sentiment = e.sentiment ?? 0;
+      return {
+        articleId: 700000 + index,
+        title: e.title,
+        source: e.source || 'Источник не указан',
+        publishedAt: e.published_at || new Date().toISOString(),
+        sentiment,
+        stance: stanceFromSentiment(sentiment),
+      };
+    });
+
+  const baseTimeline = ARTICLES
+    .filter((a) => a.countryId === code)
+    .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt))
+    .map((a) => ({
+      articleId: a.id,
+      title: a.title,
+      source: a.source,
+      publishedAt: a.publishedAt,
+      sentiment: a.sentiment,
+      stance: a.stance,
+    }));
+
+  const merged = [...liveEvents, ...baseTimeline]
+    .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
+
+  const deduped: typeof merged = [];
+  const seen = new Set<string>();
+  for (const item of merged) {
+    const key = normalizeText(`${item.title} ${item.source}`);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(item);
+  }
+
+  return {
+    country: {
+      id: country.id,
+      name: country.nameRu,
+      flag: country.flag,
+      temperature: liveCountry?.temperature ?? null,
+      divergence: liveCountry?.divergence ?? 0,
+      articleCount: liveCountry?.article_count ?? deduped.length,
+      updatedAt: liveCountry?.last_updated ?? null,
+    },
+    timeline: deduped.slice(0, 200),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 function buildRichTimeline(
   baseTimeline: Array<{
     articleId: number;
