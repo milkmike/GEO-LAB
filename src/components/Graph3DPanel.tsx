@@ -6,6 +6,7 @@ import { fetchSubgraph } from '@/lib/graph/client';
 import type { SubgraphResponse } from '@/lib/graph/types';
 
 const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { ssr: false });
+const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
 type GraphNode = {
   id: string;
@@ -21,6 +22,8 @@ type GraphLink = {
   relation: string;
   confidence: number;
 };
+
+type GraphNodeRender = GraphNode & { x?: number; y?: number };
 
 function colorByKind(kind: string): string {
   switch (kind) {
@@ -38,6 +41,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<{ zoomToFit: (ms?: number, px?: number) => void } | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const [renderMode, setRenderMode] = useState<'3d' | '2d'>('2d');
 
   useEffect(() => {
     if (!nodeId) return;
@@ -99,7 +103,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
       }
     }, 200);
     return () => clearTimeout(t);
-  }, [graphData]);
+  }, [graphData, renderMode]);
 
   if (!nodeId) {
     return <div className="p-3 text-xs text-zinc-500">Открой кейс, чтобы увидеть 3D-граф.</div>;
@@ -115,11 +119,18 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <div className="px-3 pt-2 pb-1 text-xs text-zinc-500">
-        3D subgraph · {graphData.nodes.length} nodes / {graphData.links.length} links
+      <div className="px-3 pt-2 pb-1 text-xs text-zinc-500 flex items-center justify-between">
+        <span>{renderMode.toUpperCase()} subgraph · {graphData.nodes.length} nodes / {graphData.links.length} links</span>
+        <button
+          onClick={() => setRenderMode((m) => (m === '3d' ? '2d' : '3d'))}
+          className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+        >
+          {renderMode === '3d' ? 'Switch to 2D' : 'Try 3D'}
+        </button>
       </div>
+
       <div ref={containerRef} className="flex-1 min-h-0">
-        {size.width > 0 && size.height > 0 && (
+        {size.width > 0 && size.height > 0 && renderMode === '3d' && (
           // @ts-expect-error dynamic import generic type
           <ForceGraph3D
             ref={fgRef}
@@ -135,6 +146,35 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
             linkOpacity={0.65}
             showNavInfo={true}
             enableNodeDrag={true}
+            cooldownTicks={90}
+          />
+        )}
+
+        {size.width > 0 && size.height > 0 && renderMode === '2d' && (
+          // @ts-expect-error dynamic import generic type
+          <ForceGraph2D
+            ref={fgRef}
+            width={size.width}
+            height={size.height}
+            graphData={graphData}
+            backgroundColor="#09090b"
+            nodeLabel={(n: GraphNode) => `${n.name} (${n.kind})`}
+            nodeCanvasObject={(node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
+              const n = node as GraphNodeRender;
+              const label = n.name;
+              const fontSize = Math.max(8 / globalScale, 3);
+              const x = n.x ?? 0;
+              const y = n.y ?? 0;
+              ctx.beginPath();
+              ctx.fillStyle = n.color;
+              ctx.arc(x, y, Math.max(2, n.val / 2), 0, 2 * Math.PI, false);
+              ctx.fill();
+              ctx.font = `${fontSize}px Sans-Serif`;
+              ctx.fillStyle = '#d4d4d8';
+              ctx.fillText(label, x + 4, y + 4);
+            }}
+            linkColor={(l: GraphLink) => (l.confidence >= 0.9 ? '#a1a1aa' : '#52525b')}
+            linkWidth={(l: GraphLink) => Math.max(0.5, l.confidence * 2)}
             cooldownTicks={90}
           />
         )}
