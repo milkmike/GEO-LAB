@@ -65,12 +65,24 @@ function FilterBar() {
 }
 
 function AnalystTriageBar() {
-  const { navigate } = useGraph();
+  const { navigate, state } = useGraph();
   const [triage, setTriage] = useState<TriageResponse | null>(null);
 
   useEffect(() => {
     fetchTriage().then(setTriage).catch(() => null);
   }, []);
+
+  useEffect(() => {
+    if (!triage || triage.escalations.length === 0) return;
+    if (state.focus) return;
+
+    const top = triage.escalations[0];
+    navigate('Narrative', top.narrativeId, {
+      relation: 'triage_autostart',
+      fromType: 'Country',
+      fromId: top.countries[0] || 'N/A',
+    });
+  }, [triage, state.focus, navigate]);
 
   if (!triage) {
     return (
@@ -136,7 +148,7 @@ export default function Home() {
       {/* Main content — 3-column layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Countries + Narratives */}
-        <div className="w-80 border-r border-zinc-800 overflow-y-auto flex-shrink-0">
+        <div className="w-72 border-r border-zinc-800 overflow-y-auto flex-shrink-0">
           <CountryGrid />
           <div className="border-t border-zinc-800">
             <NarrativeList />
@@ -149,7 +161,7 @@ export default function Home() {
         </div>
 
         {/* Right: Graph Visualizer */}
-        <div className="w-72 border-l border-zinc-800 overflow-y-auto flex-shrink-0">
+        <div className="w-64 border-l border-zinc-800 overflow-y-auto flex-shrink-0">
           <GraphVisualizer />
         </div>
       </div>
