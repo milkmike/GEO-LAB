@@ -1,5 +1,7 @@
 # GEO-LAB Plain Language Spec v1
 
+См. также: `TIMELINE_ARCHITECTURE.md` (контракт тайм-линий и scope-изоляции).
+
 ## Product mission
 Сделать продукт, в котором ребёнок 10 лет за 30 минут понимает:
 1. Что сейчас происходит в мире

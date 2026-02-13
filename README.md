@@ -2,6 +2,11 @@
 
 Лабораторный стенд для графовой модели GeoPulse (ontology graph + API для подграфов).
 
+## Ключевые архитектурные документы
+
+- `TIMELINE_ARCHITECTURE.md` — контракт timeline-first архитектуры (scope: Country / Narrative / Entity / Article)
+- `PLAIN_LANGUAGE_SPEC.md` — правила простого языка и UX-понятности
+
 ## Что уже есть
 
 - UI-прототип навигации по онтологии (Country/Narrative/Article/...)
