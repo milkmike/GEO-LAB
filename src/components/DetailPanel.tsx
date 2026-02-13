@@ -109,8 +109,8 @@ function CountryDetail({ countryId }: { countryId: string }) {
           { label: 'Комменты', count: comments.length, emoji: '💬' },
         ].map(s => (
           <div key={s.label} className="p-2 rounded-lg bg-zinc-800/50">
-            <div className="t-display">{s.emoji}</div>
-            <div className="t-display font-bold text-white">{s.count}</div>
+            <div className="t-body">{s.emoji}</div>
+            <div className="t-body font-semibold text-white">{s.count}</div>
             <div className="t-meta text-zinc-500">{s.label}</div>
           </div>
         ))}

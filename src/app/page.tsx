@@ -85,14 +85,14 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
   if (!hero) return null;
 
   return (
-    <div className={`${landing ? 'p-6 md:p-10' : 'px-4 py-2 border-b border-zinc-800 bg-zinc-950/70'}`}>
+    <div className={`${landing ? 'p-4 md:p-6' : 'px-4 py-2 border-b border-zinc-800 bg-zinc-950/70'}`}>
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2">
           <div className="g-kicker">Главная повестка</div>
           <div className="t-meta text-zinc-500">Качество данных: {triage.quality.status === 'ok' ? 'нормально' : 'нужно проверить'} · спорных совпадений: {triage.quality.aliasConflicts}</div>
         </div>
 
-        <div className="rounded-2xl g-panel-strong p-5 mb-3">
+        <div className="rounded-2xl g-panel-strong p-4 mb-3">
           <div className="g-kicker mb-1">Главная тема · уровень споров {hero.divergence}%</div>
           <h2 className="t-display text-white mb-2">{hero.title}</h2>
           <p className="t-body text-zinc-400 mb-4">Это лучший сюжет для старта: открой и посмотри кто участвует, что произошло и на чём основаны выводы.</p>
@@ -168,7 +168,7 @@ export default function Home() {
       </Suspense>
       
       {/* Header */}
-      <header className="g-panel border-b px-4 py-3 flex items-center gap-3">
+      <header className="g-panel border-b px-4 py-3 flex items-center gap-2">
         <span className="t-body">🐙</span>
         <div>
           <h1 className="t-body font-bold text-white">GeoPulse Lab</h1>

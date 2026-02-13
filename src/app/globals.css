@@ -169,6 +169,15 @@
   .t-display {
     font-size: 20px;
     line-height: 28px;
-    font-weight: 600;
+    font-weight: 580;
   }
+
+  /* Spacing rhythm */
+  .s-1 { @apply gap-1; }
+  .s-2 { @apply gap-2; }
+  .s-3 { @apply gap-3; }
+  .s-4 { @apply gap-4; }
+
+  .g-muted { @apply text-zinc-500; }
+  .g-subtle { @apply text-zinc-600; }
 }
