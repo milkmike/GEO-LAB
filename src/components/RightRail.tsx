@@ -3,14 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useGraph } from '@/lib/graph-provider';
 import { GraphVisualizer } from '@/components/GraphVisualizer';
+import { Graph3DPanel } from '@/components/Graph3DPanel';
 import { fetchCase, type CaseResponse } from '@/lib/analyst/client';
+import { focusToGraphNodeId } from '@/lib/graph/client';
 
 export function RightRail() {
   const { state } = useGraph();
-  const [tab, setTab] = useState<'graph' | 'evidence'>('graph');
+  const [tab, setTab] = useState<'graph' | 'graph3d' | 'evidence'>('graph');
   const [workspace, setWorkspace] = useState<CaseResponse | null>(null);
 
   const narrativeId = state.focus?.nodeType === 'Narrative' ? Number(state.focus.nodeId) : null;
+  const graphNodeId = state.focus ? focusToGraphNodeId(state.focus) : null;
 
   useEffect(() => {
     if (!narrativeId) return;
@@ -27,6 +30,12 @@ export function RightRail() {
           Graph
         </button>
         <button
+          onClick={() => setTab('graph3d')}
+          className={`text-xs px-2 py-1 rounded ${tab === 'graph3d' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400'}`}
+        >
+          3D
+        </button>
+        <button
           onClick={() => setTab('evidence')}
           className={`text-xs px-2 py-1 rounded ${tab === 'evidence' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400'}`}
         >
@@ -34,11 +43,19 @@ export function RightRail() {
         </button>
       </div>
 
-      {tab === 'graph' ? (
+      {tab === 'graph' && (
         <div className="flex-1 overflow-y-auto">
           <GraphVisualizer />
         </div>
-      ) : (
+      )}
+
+      {tab === 'graph3d' && (
+        <div className="flex-1 overflow-hidden">
+          <Graph3DPanel nodeId={graphNodeId} />
+        </div>
+      )}
+
+      {tab === 'evidence' && (
         <div className="flex-1 overflow-y-auto p-3">
           <h3 className="text-sm text-zinc-300 mb-2">Evidence panel</h3>
           {!narrativeId && (

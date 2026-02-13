@@ -1,4 +1,4 @@
-import type { NeighborsResponse } from './types';
+import type { NeighborsResponse, SubgraphResponse } from './types';
 import type { GraphFocus } from '@/types/ontology';
 
 export function focusToGraphNodeId(focus: GraphFocus): string {
@@ -27,6 +27,14 @@ export async function fetchNeighbors(nodeId: string): Promise<NeighborsResponse>
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`neighbors failed: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchSubgraph(nodeId: string, depth = 2): Promise<SubgraphResponse> {
+  const res = await fetch(`/api/graph/subgraph?nodeId=${encodeURIComponent(nodeId)}&depth=${depth}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`subgraph failed: ${res.status}`);
   return res.json();
 }
 

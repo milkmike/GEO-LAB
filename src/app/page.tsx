@@ -225,7 +225,7 @@ export default function Home() {
             </div>
 
             {/* Right: Graph / Evidence */}
-            <div className="w-64 border-l border-zinc-800 overflow-y-auto flex-shrink-0">
+            <div className="w-80 border-l border-zinc-800 overflow-y-auto flex-shrink-0">
               <RightRail />
             </div>
           </div>
