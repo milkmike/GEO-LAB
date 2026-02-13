@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useGraph } from '@/lib/graph-provider';
 import {
   getCountry,
@@ -11,12 +12,12 @@ import {
   getCommentsForCountry,
   getCommentsForArticle,
   getEventsForCountry,
-  getEventsForNarrative,
   getTemperatureForCountry,
   ARTICLES,
   CHANNELS,
 } from '@/mock/data';
 import type { Article, VoxComment } from '@/types/ontology';
+import { fetchBrief, fetchCase, type BriefResponse, type CaseResponse } from '@/lib/analyst/client';
 
 function SentimentBadge({ value }: { value: number }) {
   const color = value > 0.3 ? 'text-green-400' : value < -0.3 ? 'text-red-400' : 'text-zinc-400';
@@ -192,22 +193,37 @@ function CountryDetail({ countryId }: { countryId: string }) {
 function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   const { navigate } = useGraph();
   const narrative = getNarrative(narrativeId);
+  const [workspace, setWorkspace] = useState<CaseResponse | null>(null);
+  const [brief, setBrief] = useState<BriefResponse | null>(null);
+
+  useEffect(() => {
+    fetchCase(narrativeId).then(setWorkspace).catch(() => null);
+  }, [narrativeId]);
+
   if (!narrative) return <div className="p-4 text-zinc-500">Сюжет не найден</div>;
 
   const articles = getArticlesForNarrative(narrativeId);
-  const events = getEventsForNarrative(narrativeId);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-white">{narrative.titleRu}</h2>
-        <div className="flex items-center gap-3 text-sm text-zinc-400 mt-1">
-          <span className={`px-2 py-0.5 rounded-full ${
-            narrative.status === 'active' ? 'bg-green-500/20 text-green-300' :
-            'bg-yellow-500/20 text-yellow-300'
-          }`}>{narrative.status}</span>
-          <span>Расхождение: {narrative.divergenceScore}%</span>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-white">{narrative.titleRu}</h2>
+          <div className="flex items-center gap-3 text-sm text-zinc-400 mt-1">
+            <span className={`px-2 py-0.5 rounded-full ${
+              narrative.status === 'active' ? 'bg-green-500/20 text-green-300' :
+              'bg-yellow-500/20 text-yellow-300'
+            }`}>{narrative.status}</span>
+            <span>Расхождение: {narrative.divergenceScore}%</span>
+            {workspace && <span>graph: {workspace.graphStats.nodes}N/{workspace.graphStats.edges}E</span>}
+          </div>
         </div>
+        <button
+          onClick={() => fetchBrief(narrativeId).then(setBrief).catch(() => null)}
+          className="text-xs px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
+        >
+          Generate brief
+        </button>
       </div>
 
       {/* Countries involved */}
@@ -236,32 +252,73 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         ))}
       </div>
 
-      {/* Articles */}
-      {articles.length > 0 && (
+      {/* Entities + Evidence */}
+      {workspace && workspace.entities.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">📄 Статьи ({articles.length})</h3>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🧩 Actors & Evidence</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {workspace.entities.slice(0, 8).map((e) => (
+              <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50">
+                <div className="text-sm text-white">{e.label}</div>
+                <div className="text-xs text-zinc-500">{e.kind} · {e.relation} · conf {e.confidence.toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      {workspace && workspace.timeline.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🕒 Timeline (case workspace)</h3>
           <div className="space-y-1">
-            {articles.map(a => (
-              <ArticleRow 
-                key={a.id} 
-                article={a} 
-                onNavigate={() => navigate('Article', a.id, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })} 
+            {workspace.timeline.slice(0, 12).map((a) => (
+              <ArticleRow
+                key={a.articleId}
+                article={{
+                  type: 'Article',
+                  id: a.articleId,
+                  title: a.title,
+                  url: '#',
+                  source: a.source,
+                  channelId: 0,
+                  countryId: narrative.countries[0],
+                  narrativeId,
+                  publishedAt: a.publishedAt,
+                  sentiment: a.sentiment,
+                  stance: a.stance as 'pro_russia' | 'neutral' | 'anti_russia',
+                  language: 'ru',
+                }}
+                onNavigate={() => navigate('Article', a.articleId, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* Events */}
-      {events.length > 0 && (
+      {/* Brief */}
+      {brief && (
+        <div className="p-3 rounded-xl border border-zinc-700 bg-zinc-900/80">
+          <h3 className="text-sm font-semibold text-zinc-300 mb-2">📝 Analyst brief</h3>
+          <ul className="list-disc list-inside space-y-1 text-sm text-zinc-300">
+            {brief.bullets.map((b, i) => <li key={i}>{b}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Articles fallback */}
+      {articles.length > 0 && !workspace && (
         <div>
-          <h3 className="text-sm font-semibold text-zinc-400 mb-2">🔥 События</h3>
-          {events.map(e => (
-            <div key={e.id} className="p-2 rounded-lg bg-zinc-800/50">
-              <div className="text-sm text-white">{e.title}</div>
-              <div className="text-xs text-zinc-500">{new Date(e.date).toLocaleDateString('ru')}</div>
-            </div>
-          ))}
+          <h3 className="text-sm font-semibold text-zinc-400 mb-2">📄 Статьи ({articles.length})</h3>
+          <div className="space-y-1">
+            {articles.map(a => (
+              <ArticleRow
+                key={a.id}
+                article={a}
+                onNavigate={() => navigate('Article', a.id, { relation: 'contains_articles', fromType: 'Narrative', fromId: narrativeId })}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -366,7 +423,7 @@ export function DetailPanel() {
     case 'Country':
       return <CountryDetail countryId={String(nodeId)} />;
     case 'Narrative':
-      return <NarrativeDetail narrativeId={Number(nodeId)} />;
+      return <NarrativeDetail key={`n-${nodeId}`} narrativeId={Number(nodeId)} />;
     case 'Article':
       return <ArticleDetail articleId={Number(nodeId)} />;
     default:

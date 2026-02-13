@@ -9,6 +9,7 @@ import { GraphVisualizer } from '@/components/GraphVisualizer';
 import { useGraph } from '@/lib/graph-provider';
 import { useUrlSync } from '@/lib/url-sync';
 import { fetchGraphHealth } from '@/lib/graph/client';
+import { fetchTriage, type TriageResponse } from '@/lib/analyst/client';
 
 function UrlSyncWrapper() {
   useUrlSync();
@@ -63,6 +64,45 @@ function FilterBar() {
   );
 }
 
+function AnalystTriageBar() {
+  const { navigate } = useGraph();
+  const [triage, setTriage] = useState<TriageResponse | null>(null);
+
+  useEffect(() => {
+    fetchTriage().then(setTriage).catch(() => null);
+  }, []);
+
+  if (!triage) {
+    return (
+      <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-950 text-xs text-zinc-500">
+        Analyst Home: loading...
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-950/80">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-xs text-zinc-400">🎯 Analyst Home · triage</div>
+        <div className="text-xs text-zinc-500">quality: {triage.quality.status} · alias conflicts {triage.quality.aliasConflicts}</div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {triage.escalations.slice(0, 4).map((item) => (
+          <button
+            key={item.narrativeId}
+            onClick={() => navigate('Narrative', item.narrativeId, { relation: 'triage_open_case', fromType: 'Country', fromId: item.countries[0] || 'N/A' })}
+            className="text-left p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800"
+          >
+            <div className="text-xs text-orange-300">⚡ escalation {item.divergence}%</div>
+            <div className="text-sm text-white line-clamp-1">{item.title}</div>
+            <div className="text-xs text-zinc-500">case #{item.narrativeId} · {item.status}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -89,6 +129,9 @@ export default function Home() {
       
       {/* Filters */}
       <FilterBar />
+
+      {/* Analyst Triage */}
+      <AnalystTriageBar />
 
       {/* Main content — 3-column layout */}
       <div className="flex-1 flex overflow-hidden">
