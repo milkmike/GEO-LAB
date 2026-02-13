@@ -85,7 +85,7 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
   if (!hero) return null;
 
   return (
-    <div className={`${landing ? 'p-4 md:p-6' : 'px-4 py-2 border-b border-zinc-800 bg-zinc-950/70'}`}>
+    <div className={`${landing ? 'p-4 md:p-6' : 'px-4 py-3'}`}>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           <div className="g-kicker">Главная повестка</div>
@@ -149,7 +149,7 @@ function ActiveCaseHeader() {
     .join(' · ');
 
   return (
-    <div className="sticky top-0 z-10 mb-3 rounded-xl g-panel px-3 py-2">
+    <div className="mb-3 rounded-xl g-panel px-3 py-2">
       <div className="t-meta text-zinc-500">Открытый сюжет</div>
       <div className="t-body text-white font-semibold line-clamp-1">{n.titleRu}</div>
       <div className="t-meta text-zinc-500">{countryLabels} · уровень споров {n.divergenceScore}%</div>
@@ -201,35 +201,33 @@ export default function Home() {
           <SignalDeck landing />
         </div>
       ) : (
-        <>
-          <SignalDeck />
-
-          {/* Main content — 3-column layout */}
-          <div className="flex-1 flex overflow-hidden">
-            {/* Left: Countries + Narratives */}
-            <div className={`${leftCollapsed ? 'w-0 border-r-0' : 'w-72 border-r'} border-zinc-800 overflow-hidden flex-shrink-0 transition-all duration-200`}>
-              {!leftCollapsed && (
-                <div className="h-full overflow-y-auto">
-                  <CountryGrid />
-                  <div className="border-t border-zinc-800">
-                    <NarrativeList />
-                  </div>
+        <div className="flex-1 flex overflow-hidden">
+          <div className={`${leftCollapsed ? 'w-0 border-r-0' : 'w-72 border-r'} border-zinc-800 overflow-hidden flex-shrink-0 transition-all duration-200`}>
+            {!leftCollapsed && (
+              <div className="h-full overflow-y-auto">
+                <CountryGrid />
+                <div className="border-t border-zinc-800">
+                  <NarrativeList />
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="g-panel rounded-2xl">
+              <SignalDeck />
             </div>
 
-            {/* Center: Active Case Workspace */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="g-panel rounded-2xl p-4">
               <ActiveCaseHeader />
               <DetailPanel />
             </div>
-
-            {/* Right: Graph / Evidence */}
-            <div className="w-[34rem] max-w-[45vw] border-l border-zinc-800 overflow-y-auto flex-shrink-0">
-              <RightRail />
-            </div>
           </div>
-        </>
+
+          <div className="w-[30rem] max-w-[42vw] border-l border-zinc-800 overflow-y-auto flex-shrink-0 g-panel">
+            <RightRail />
+          </div>
+        </div>
       )}
     </div>
   );

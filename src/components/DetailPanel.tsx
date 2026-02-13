@@ -201,35 +201,51 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
     fetchCase(narrativeId).then(setWorkspace).catch(() => null);
   }, [narrativeId]);
 
+  useEffect(() => {
+    fetchBrief(narrativeId).then(setBrief).catch(() => null);
+  }, [narrativeId]);
+
   if (!narrative) return <div className="p-4 text-zinc-500">Сюжет не найден</div>;
 
   const articles = getArticlesForNarrative(narrativeId);
+  const countriesPlain = narrative.countries
+    .map((cid) => getCountry(cid)?.nameRu)
+    .filter(Boolean)
+    .join(', ');
+
+  const simpleSummary = brief?.bullets?.[0] || `Сейчас в центре внимания тема: ${narrative.titleRu}.`;
+  const simpleWhy = narrative.divergenceScore >= 70
+    ? 'Вокруг этой темы много разных мнений, поэтому важно следить за фактами.'
+    : 'Тема развивается спокойно, но может повлиять на отношения стран.';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="t-display font-bold text-white">{narrative.titleRu}</h2>
-          <div className="flex items-center gap-3 t-body text-zinc-400 mt-1">
-            <span className={`px-2 py-0.5 rounded-full ${
-              narrative.status === 'active' ? 'bg-green-500/20 text-green-300' :
-              'bg-yellow-500/20 text-yellow-300'
-            }`}>{narrativeStatusLabel(narrative.status)}</span>
-            <span>Уровень споров: {narrative.divergenceScore}%</span>
-            {workspace && <span>Карта связей: {workspace.graphStats.nodes} узлов и {workspace.graphStats.edges} связей</span>}
-          </div>
+    <div className="space-y-5">
+      <div className="g-panel rounded-2xl p-4 space-y-3">
+        <div className="g-kicker">Сюжет простыми словами</div>
+        <h2 className="t-display font-semibold text-white">{narrative.titleRu}</h2>
+        <div className="flex flex-wrap gap-2 t-meta text-zinc-400">
+          <span className={`px-2 py-0.5 rounded-full ${
+            narrative.status === 'active' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'
+          }`}>{narrativeStatusLabel(narrative.status)}</span>
+          <span>Уровень споров: {narrative.divergenceScore}%</span>
+          <span>Страны: {countriesPlain}</span>
         </div>
-        <button
-          onClick={() => fetchBrief(narrativeId).then(setBrief).catch(() => null)}
-          className="t-meta px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30"
-        >
-Собрать краткую сводку
-        </button>
       </div>
 
-      {/* Countries involved */}
+      <div className="grid md:grid-cols-2 gap-3">
+        <section className="g-panel rounded-xl p-3">
+          <h3 className="t-body text-white font-semibold mb-1">Что случилось</h3>
+          <p className="t-body text-zinc-300">{simpleSummary}</p>
+        </section>
+
+        <section className="g-panel rounded-xl p-3">
+          <h3 className="t-body text-white font-semibold mb-1">Почему это важно</h3>
+          <p className="t-body text-zinc-300">{simpleWhy}</p>
+        </section>
+      </div>
+
       <div>
-        <h3 className="t-body font-semibold text-zinc-400 mb-2">🌍 Страны</h3>
+        <h3 className="t-body font-semibold text-zinc-400 mb-2">Участники сюжета</h3>
         <div className="flex gap-2 flex-wrap">
           {narrative.countries.map(cid => {
             const c = getCountry(cid);
@@ -246,7 +262,6 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         </div>
       </div>
 
-      {/* Keywords */}
       <div className="flex flex-wrap gap-1.5">
         {narrative.keywords.map(kw => (
           <span key={kw} className="t-meta px-2 py-1 rounded-full bg-zinc-800 text-zinc-400">{kw}</span>

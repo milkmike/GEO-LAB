@@ -28,13 +28,13 @@ export function RightRail() {
           onClick={() => setTab('graph')}
           className={`t-meta px-2 py-1 rounded border ${tab === 'graph' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
-Связи
+Кто с кем связан
         </button>
         <button
           onClick={() => setTab('graph3d')}
           className={`t-meta px-2 py-1 rounded border ${tab === 'graph3d' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
-Карта
+Визуальная карта
         </button>
         <button
           onClick={() => setTab('evidence')}
@@ -42,6 +42,9 @@ export function RightRail() {
         >
 Подтверждения
         </button>
+      </div>
+      <div className="px-3 py-2 border-b border-zinc-900">
+        <p className="t-meta text-zinc-500">Здесь объясняется, как участники сюжета связаны между собой.</p>
       </div>
 
       {tab === 'graph' && (
