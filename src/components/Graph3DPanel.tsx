@@ -103,12 +103,15 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
     return () => clearTimeout(t);
   }, [graphData, renderMode]);
 
-  const svgLayout = useMemo(() => {
-    if (!graphData || size.width <= 0 || size.height <= 0) return null;
+  const effectiveWidth = Math.max(size.width, 560);
+  const effectiveHeight = Math.max(size.height, 420);
 
-    const cx = size.width / 2;
-    const cy = size.height / 2;
-    const radius = Math.max(80, Math.min(size.width, size.height) * 0.35);
+  const svgLayout = useMemo(() => {
+    if (!graphData) return null;
+
+    const cx = effectiveWidth / 2;
+    const cy = effectiveHeight / 2;
+    const radius = Math.max(80, Math.min(effectiveWidth, effectiveHeight) * 0.35);
 
     const centerNode = graphData.nodes.find((n) => n.id === graphData.center) || graphData.nodes[0];
     const rest = graphData.nodes.filter((n) => n.id !== centerNode.id);
@@ -125,7 +128,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
     });
 
     return { positions };
-  }, [graphData, size]);
+  }, [graphData, effectiveHeight, effectiveWidth]);
 
   if (!nodeId) {
     return <div className="p-3 text-xs text-zinc-500">Открой кейс, чтобы увидеть граф.</div>;
@@ -142,7 +145,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   return (
     <div className="h-full w-full flex flex-col">
       <div className="px-3 pt-2 pb-1 text-xs text-zinc-500 flex items-center justify-between">
-        <span>{renderMode.toUpperCase()} subgraph · {graphData.nodes.length} nodes / {graphData.links.length} links</span>
+        <span>{renderMode.toUpperCase()} subgraph · {graphData.nodes.length} nodes / {graphData.links.length} links · {size.width}×{size.height}</span>
         <div className="flex gap-1">
           <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode==='svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>SVG</button>
           <button onClick={() => setRenderMode('2d')} className={`px-2 py-0.5 rounded ${renderMode==='2d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>2D</button>
@@ -151,8 +154,10 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
       </div>
 
       <div ref={containerRef} className="flex-1 min-h-0">
-        {size.width > 0 && size.height > 0 && renderMode === 'svg' && svgLayout && (
-          <svg width={size.width} height={size.height} style={{ background: '#09090b' }}>
+        {renderMode === 'svg' && svgLayout && (
+          <svg width="100%" height="100%" viewBox={`0 0 ${effectiveWidth} ${effectiveHeight}`} style={{ background: '#09090b' }}>
+            <rect x="1" y="1" width={effectiveWidth - 2} height={effectiveHeight - 2} fill="transparent" stroke="#334155" strokeWidth="1" />
+            <line x1="10" y1="10" x2={effectiveWidth - 10} y2="10" stroke="#ef4444" strokeWidth="2" />
             {graphData.links.map((l, i) => {
               const a = svgLayout.positions.get(l.source);
               const b = svgLayout.positions.get(l.target);
