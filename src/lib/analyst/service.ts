@@ -28,6 +28,39 @@ type LiveCountryEventsResponse = {
   events: LiveCountryEvent[];
 };
 
+type EntityTimelineItem = {
+  articleId: number;
+  title: string;
+  source: string;
+  publishedAt: string;
+  sentiment: number;
+  stance: string;
+  relevanceScore: number;
+  whyIncluded: string;
+  countryCode: string;
+};
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[^a-zа-я0-9\s]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function matchesEntityTitle(title: string, entity: string): { matched: boolean; score: number } {
+  const normalizedTitle = normalizeText(title);
+  const terms = normalizeText(entity).split(' ').filter((t) => t.length >= 2);
+  if (!normalizedTitle || terms.length === 0) return { matched: false, score: 0 };
+
+  const matchedTerms = terms.filter((term) => normalizedTitle.includes(term));
+  const score = matchedTerms.reduce((acc, term) => acc + (term.length >= 5 ? 2 : 1), 0);
+
+  if (terms.length === 1) return { matched: score >= 2, score };
+  return { matched: matchedTerms.length >= 2 || score >= 3, score };
+}
+
 async function fetchJSON<T>(path: string): Promise<T | null> {
   const url = `${GEOPULSE_BASE}${path}`;
 
@@ -164,6 +197,62 @@ export async function getCountryWorkspace(countryCode: string) {
       updatedAt: liveCountry?.last_updated ?? null,
     },
     timeline,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+export async function getEntityWorkspace(entity: string, countryCodes?: string[]) {
+  const cleanEntity = entity.trim();
+  if (!cleanEntity) return null;
+
+  const allowedCountries = (countryCodes || [])
+    .map((c) => c.trim().toUpperCase())
+    .filter(Boolean);
+
+  const countriesToScan = allowedCountries.length
+    ? allowedCountries
+    : Array.from(new Set(NARRATIVES.flatMap((n) => n.countries)));
+
+  const payloads = await Promise.all(
+    countriesToScan.map((code) => fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=120&sort=date`)),
+  );
+
+  const items: EntityTimelineItem[] = [];
+
+  for (let idx = 0; idx < countriesToScan.length; idx += 1) {
+    const code = countriesToScan[idx];
+    const events = payloads[idx]?.events || [];
+
+    for (const event of events) {
+      if (!event.title || !event.published_at) continue;
+      const match = matchesEntityTitle(event.title, cleanEntity);
+      if (!match.matched) continue;
+
+      const sentiment = event.sentiment ?? 0;
+      items.push({
+        articleId: 980000 + items.length,
+        title: event.title,
+        source: event.source || 'Источник не указан',
+        publishedAt: event.published_at,
+        sentiment,
+        stance: sentiment > 0.2 ? 'pro_russia' : sentiment < -0.2 ? 'anti_russia' : 'neutral',
+        relevanceScore: match.score,
+        whyIncluded: `Есть упоминание: ${cleanEntity}`,
+        countryCode: code,
+      });
+    }
+  }
+
+  const deduped = new Map<string, EntityTimelineItem>();
+  for (const item of items.sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt))) {
+    const key = normalizeText(`${item.title} ${item.source}`);
+    if (!deduped.has(key)) deduped.set(key, item);
+  }
+
+  return {
+    entity: cleanEntity,
+    countries: countriesToScan,
+    timeline: Array.from(deduped.values()).slice(0, 120),
     generatedAt: new Date().toISOString(),
   };
 }

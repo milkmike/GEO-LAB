@@ -38,7 +38,24 @@ export interface CountryWorkspaceResponse {
     articleCount: number;
     updatedAt: string | null;
   };
-  timeline: Array<{ articleId: number; title: string; source: string; publishedAt: string; sentiment: number; stance: string }>;
+  timeline: Array<{ articleId: number; title: string; source: string; publishedAt: string; sentiment: number; stance: string; relevanceScore: number; whyIncluded: string }>;
+  generatedAt: string;
+}
+
+export interface EntityWorkspaceResponse {
+  entity: string;
+  countries: string[];
+  timeline: Array<{
+    articleId: number;
+    title: string;
+    source: string;
+    publishedAt: string;
+    sentiment: number;
+    stance: string;
+    relevanceScore: number;
+    whyIncluded: string;
+    countryCode: string;
+  }>;
   generatedAt: string;
 }
 
@@ -63,5 +80,14 @@ export async function fetchBrief(narrativeId: number): Promise<BriefResponse> {
 export async function fetchCountryWorkspace(code: string): Promise<CountryWorkspaceResponse> {
   const r = await fetch(`/api/analyst/country?code=${encodeURIComponent(code)}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`country ${r.status}`);
+  return r.json();
+}
+
+export async function fetchEntityWorkspace(entity: string, countries?: string[]): Promise<EntityWorkspaceResponse> {
+  const params = new URLSearchParams({ entity });
+  if (countries?.length) params.set('countries', countries.join(','));
+
+  const r = await fetch(`/api/analyst/entity?${params.toString()}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`entity ${r.status}`);
   return r.json();
 }

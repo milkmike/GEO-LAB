@@ -21,9 +21,11 @@ import {
   fetchBrief,
   fetchCase,
   fetchCountryWorkspace,
+  fetchEntityWorkspace,
   type BriefResponse,
   type CaseResponse,
   type CountryWorkspaceResponse,
+  type EntityWorkspaceResponse,
 } from '@/lib/analyst/client';
 import { narrativeStatusLabel } from '@/lib/plain-language';
 import { TimelineSpine, type SpineItem } from '@/components/TimelineSpine';
@@ -135,6 +137,8 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   const narrative = getNarrative(narrativeId);
   const [workspace, setWorkspace] = useState<CaseResponse | null>(null);
   const [brief, setBrief] = useState<BriefResponse | null>(null);
+  const [activeEntity, setActiveEntity] = useState<string | null>(null);
+  const [entityWorkspace, setEntityWorkspace] = useState<EntityWorkspaceResponse | null>(null);
 
   useEffect(() => {
     fetchCase(narrativeId).then(setWorkspace).catch(() => null);
@@ -143,6 +147,14 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
   useEffect(() => {
     fetchBrief(narrativeId).then(setBrief).catch(() => null);
   }, [narrativeId]);
+
+  useEffect(() => {
+    if (!activeEntity) return;
+
+    fetchEntityWorkspace(activeEntity, narrative?.countries)
+      .then(setEntityWorkspace)
+      .catch(() => setEntityWorkspace(null));
+  }, [activeEntity, narrative?.countries]);
 
   if (!narrative) return <div className="p-4 text-zinc-500">Сюжет не найден</div>;
 
@@ -193,15 +205,51 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
       />
 
       {workspace && workspace.entities.length > 0 && (
-        <section className="pt-2 border-t border-zinc-800">
-          <h3 className="t-body text-zinc-300 font-semibold mb-2">Кто участвует</h3>
-          <div className="flex flex-wrap gap-2">
-            {workspace.entities.slice(0, 18).map((e) => (
-              <span key={e.id} className="t-meta px-2 py-1 rounded-full border border-zinc-700 bg-zinc-900 text-zinc-300">
-                {e.label}
-              </span>
-            ))}
+        <section className="pt-2 border-t border-zinc-800 space-y-3">
+          <div>
+            <h3 className="t-body text-zinc-300 font-semibold mb-2">Кто участвует</h3>
+            <div className="flex flex-wrap gap-2">
+              {workspace.entities.slice(0, 18).map((e) => (
+                <button
+                  key={e.id}
+                  onClick={() => {
+                    setEntityWorkspace(null);
+                    setActiveEntity(e.label);
+                  }}
+                  className={`t-meta px-2 py-1 rounded-full border ${activeEntity === e.label ? 'border-cyan-500/60 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}`}
+                >
+                  {e.label}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {activeEntity && (
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-2">
+              <div className="t-meta text-zinc-500 mb-2">Линия персонажа/сущности: {activeEntity}</div>
+
+              {!entityWorkspace && (
+                <div className="t-meta text-zinc-600">Загружаю связанные публикации…</div>
+              )}
+
+              {entityWorkspace && entityWorkspace.timeline.length === 0 && (
+                <div className="t-meta text-zinc-600">Пока не нашли публикации по этой сущности в странах сюжета.</div>
+              )}
+
+              {entityWorkspace && entityWorkspace.timeline.length > 0 && (
+                <TimelineSpine
+                  items={entityWorkspace.timeline.slice(0, 30).map((item) => ({
+                    id: `entity:${item.articleId}`,
+                    title: item.title,
+                    date: item.publishedAt,
+                    meta: `${item.countryCode} · ${item.source} · ${item.whyIncluded}`,
+                    isTurningPoint: item.relevanceScore >= 4,
+                  }))}
+                  emptyText="Нет событий в линии этой сущности."
+                />
+              )}
+            </div>
+          )}
         </section>
       )}
     </div>
