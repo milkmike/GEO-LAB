@@ -6,6 +6,8 @@
 
 - `TIMELINE_ARCHITECTURE.md` — контракт timeline-first архитектуры (scope: Country / Narrative / Entity / Article)
 - `PLAIN_LANGUAGE_SPEC.md` — правила простого языка и UX-понятности
+- `docs/lab/architecture.md` — базовая архитектура репозитория и release-контур
+- `docs/lab/WAVE_1_IMPLEMENTATION.md` — что именно реализовано в Wave 1 (infra/graph/workbench), как проверять и что дальше
 
 ## Что уже есть
 
