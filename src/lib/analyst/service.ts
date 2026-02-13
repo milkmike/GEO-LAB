@@ -1,5 +1,6 @@
 import { ARTICLES, NARRATIVES, getCountry, getEventsForNarrative } from '@/mock/data';
 import { getNeighbors, getSubgraph, graphHealth } from '@/lib/graph/query';
+import { buildCountryTimeline, buildNarrativeTimeline } from '@/lib/timeline/engine';
 
 const GEOPULSE_BASE = process.env.GEOPULSE_API_BASE_URL || 'https://massaraksh.tech';
 
@@ -26,44 +27,6 @@ type LiveCountryEvent = {
 type LiveCountryEventsResponse = {
   events: LiveCountryEvent[];
 };
-
-function normalizeText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/ё/g, 'е')
-    .replace(/[^a-zа-я0-9\s]/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function buildNarrativeTerms(narrative: (typeof NARRATIVES)[number]): string[] {
-  const fromKeywords = (narrative.keywords || [])
-    .flatMap((k) => normalizeText(k).split(' '))
-    .filter((term) => term.length >= 2);
-
-  return Array.from(new Set(fromKeywords));
-}
-
-function isRelevantToNarrative(title: string, narrativeTerms: string[]): boolean {
-  const normalizedTitle = normalizeText(title);
-  if (!normalizedTitle || narrativeTerms.length === 0) return false;
-
-  const broadTerms = new Set(['газ', 'транзит']);
-  const matches = narrativeTerms.filter((term) => normalizedTitle.includes(term));
-  if (matches.length === 0) return false;
-
-  const hasSpecificLongTerm = matches.some((term) => term.length >= 6 && !broadTerms.has(term));
-  const hasLatinToken = matches.some((term) => /[a-z]/i.test(term));
-
-  if (hasSpecificLongTerm || hasLatinToken) return true;
-  return matches.length >= 2;
-}
-
-function stanceFromSentiment(sentiment: number): string {
-  if (sentiment > 0.2) return 'pro_russia';
-  if (sentiment < -0.2) return 'anti_russia';
-  return 'neutral';
-}
 
 async function fetchJSON<T>(path: string): Promise<T | null> {
   const url = `${GEOPULSE_BASE}${path}`;
@@ -169,17 +132,13 @@ export async function getCountryWorkspace(countryCode: string) {
   const livePayload = await fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=200&sort=date`);
   const liveEvents = (livePayload?.events || [])
     .filter((e) => Boolean(e.title) && Boolean(e.published_at))
-    .map((e, index) => {
-      const sentiment = e.sentiment ?? 0;
-      return {
-        articleId: 700000 + index,
-        title: e.title,
-        source: e.source || 'Источник не указан',
-        publishedAt: e.published_at || new Date().toISOString(),
-        sentiment,
-        stance: stanceFromSentiment(sentiment),
-      };
-    });
+    .map((e, index) => ({
+      articleId: 700000 + index,
+      title: e.title,
+      source: e.source || 'Источник не указан',
+      publishedAt: e.published_at || new Date().toISOString(),
+      sentiment: e.sentiment ?? 0,
+    }));
 
   const baseTimeline = ARTICLES
     .filter((a) => a.countryId === code)
@@ -190,20 +149,9 @@ export async function getCountryWorkspace(countryCode: string) {
       source: a.source,
       publishedAt: a.publishedAt,
       sentiment: a.sentiment,
-      stance: a.stance,
     }));
 
-  const merged = [...liveEvents, ...baseTimeline]
-    .sort((a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt));
-
-  const deduped: typeof merged = [];
-  const seen = new Set<string>();
-  for (const item of merged) {
-    const key = normalizeText(`${item.title} ${item.source}`);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(item);
-  }
+  const timeline = buildCountryTimeline([...liveEvents, ...baseTimeline], code, 200);
 
   return {
     country: {
@@ -212,58 +160,12 @@ export async function getCountryWorkspace(countryCode: string) {
       flag: country.flag,
       temperature: liveCountry?.temperature ?? null,
       divergence: liveCountry?.divergence ?? 0,
-      articleCount: liveCountry?.article_count ?? deduped.length,
+      articleCount: liveCountry?.article_count ?? timeline.length,
       updatedAt: liveCountry?.last_updated ?? null,
     },
-    timeline: deduped.slice(0, 200),
+    timeline,
     generatedAt: new Date().toISOString(),
   };
-}
-
-function buildRichTimeline(
-  baseTimeline: Array<{
-    articleId: number;
-    title: string;
-    source: string;
-    publishedAt: string;
-    sentiment: number;
-    stance: string;
-  }>,
-  liveEvents: LiveCountryEvent[],
-  narrativeTerms: string[],
-) {
-  const filteredLiveEvents = liveEvents.filter(
-    (e) => Boolean(e.title) && Boolean(e.published_at) && isRelevantToNarrative(e.title, narrativeTerms),
-  );
-
-  const enrichedFromLive = filteredLiveEvents
-    .map((e, index) => {
-      const sentiment = e.sentiment ?? 0;
-      return {
-        articleId: 900000 + index,
-        title: e.title,
-        source: e.source || 'Источник не указан',
-        publishedAt: e.published_at || new Date().toISOString(),
-        sentiment,
-        stance: stanceFromSentiment(sentiment),
-      };
-    });
-
-  const merged = [...baseTimeline, ...enrichedFromLive].sort(
-    (a, b) => +new Date(b.publishedAt) - +new Date(a.publishedAt),
-  );
-
-  const seen = new Set<string>();
-  const unique: typeof merged = [];
-
-  for (const item of merged) {
-    const dedupeKey = `${item.title}__${item.publishedAt}`.toLowerCase();
-    if (seen.has(dedupeKey)) continue;
-    seen.add(dedupeKey);
-    unique.push(item);
-  }
-
-  return unique.slice(0, 80);
 }
 
 export async function getCaseWorkspace(narrativeId: number) {
@@ -283,16 +185,28 @@ export async function getCaseWorkspace(narrativeId: number) {
       source: a.source,
       publishedAt: a.publishedAt,
       sentiment: a.sentiment,
-      stance: a.stance,
     }));
 
   const eventPayloads = await Promise.all(
-    narrative.countries.map((code) => fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=60&sort=impact`)),
+    narrative.countries.map((code) => fetchJSON<LiveCountryEventsResponse>(`/api/v1/countries/${code}/events?limit=120&sort=impact`)),
   );
 
-  const narrativeTerms = buildNarrativeTerms(narrative);
-  const liveEvents = eventPayloads.flatMap((payload) => payload?.events || []);
-  const timeline = buildRichTimeline(timelineBase, liveEvents, narrativeTerms);
+  const liveEvents = eventPayloads
+    .flatMap((payload) => payload?.events || [])
+    .filter((e) => Boolean(e.title) && Boolean(e.published_at))
+    .map((e, index) => ({
+      articleId: 900000 + index,
+      title: e.title,
+      source: e.source || 'Источник не указан',
+      publishedAt: e.published_at || new Date().toISOString(),
+      sentiment: e.sentiment ?? 0,
+    }));
+
+  const timeline = buildNarrativeTimeline(
+    [...timelineBase, ...liveEvents],
+    { title: narrative.titleRu, keywords: narrative.keywords },
+    120,
+  );
 
   const allNeighbors = getNeighbors(`narrative:${narrativeId}`).neighbors;
   const focusedNeighbors = allNeighbors.filter(
