@@ -60,6 +60,7 @@ function CountryDetail({ countryId }: { countryId: string }) {
     date: e.date,
     meta: `Событие · важность: ${e.impact}`,
     cta: e.relatedNarrativeIds[0] ? 'Открыть сюжет' : undefined,
+    isTurningPoint: e.impact === 'high',
   }));
 
   const fromArticles: SpineItem[] = articles.map((a) => ({
@@ -68,6 +69,7 @@ function CountryDetail({ countryId }: { countryId: string }) {
     date: a.publishedAt,
     meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
     cta: 'Открыть материал',
+    isTurningPoint: Math.abs(a.sentiment) >= 0.6,
   }));
 
   const timelineItems: SpineItem[] = [...fromEvents, ...fromArticles].sort(
@@ -136,6 +138,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         date: a.publishedAt,
         meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
         cta: 'Открыть материал',
+        isTurningPoint: Math.abs(a.sentiment) >= 0.6,
       }))
     : articles.map((a) => ({
         id: `article:${a.id}`,
@@ -143,6 +146,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         date: a.publishedAt,
         meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
         cta: 'Открыть материал',
+        isTurningPoint: Math.abs(a.sentiment) >= 0.6,
       }))).slice(0, 14);
 
   const intro = brief?.bullets?.[0] || `Сюжет: ${narrative.titleRu}`;
@@ -207,6 +211,7 @@ function ArticleDetail({ articleId }: { articleId: number }) {
       date: a.publishedAt,
       meta: `${a.source} · ${sentimentLabel(a.sentiment)} · ${stanceLabel(a.stance)}`,
       cta: 'Открыть материал',
+      isTurningPoint: a.id === articleId || Math.abs(a.sentiment) >= 0.6,
     }));
 
   return (
