@@ -6,8 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "check:typography": "node scripts/check-typography.js"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:unit",
+    "test:unit": "node --test tests/**/*.test.js",
+    "check:typography": "node scripts/check-typography.js",
+    "preview:env": "node scripts/preview-env.js",
+    "ci:validate": "node scripts/ci/run-task-group.js validate",
+    "ci:release": "node scripts/ci/run-task-group.js release",
+    "release": "npm run ci:release"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

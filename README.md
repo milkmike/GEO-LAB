@@ -32,11 +32,34 @@ npm ci
 npm run dev
 ```
 
+## Git branch convention
+
+Используем единый формат для рабочих веток лаборатории:
+
+```text
+lab/<stream>/<task>
+```
+
+Пример: `lab/s0-code/ci-baseline`.
+
+## Preview env для feature-веток
+
+Минимальный скрипт для локальной подготовки preview-переменных:
+
+```bash
+npm run preview:env
+# или явно
+npm run preview:env -- lab/s0-code/ci-baseline
+```
+
+Скрипт создаёт `.env.preview.local` с переменными `NEXT_PUBLIC_DEPLOY_ENV`, `NEXT_PUBLIC_PREVIEW_BRANCH`, `NEXT_PUBLIC_PREVIEW_SLUG`.
+
 ## Прод-сборка
 
 ```bash
-npm run build
-node .next/standalone/server.js
+npm run release
 ```
+
+`release` прогоняет lint + typecheck + unit tests и только затем собирает проект.
 
 > Для Docker используется `output: "standalone"` в `next.config.ts`.
