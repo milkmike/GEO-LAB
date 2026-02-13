@@ -21,6 +21,12 @@ export function RightRail() {
     fetchCase(narrativeId).then(setWorkspace).catch(() => null);
   }, [narrativeId]);
 
+  const tabHint = tab === 'graph'
+    ? 'Здесь простыми словами показано, кто с кем связан в сюжете.'
+    : tab === 'graph3d'
+      ? 'Визуальная схема тех же связей в виде карты.'
+      : 'Почему мы считаем связи верными: факты, источники и уровень уверенности.';
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-2 border-b border-zinc-800 flex gap-2">
@@ -28,23 +34,23 @@ export function RightRail() {
           onClick={() => setTab('graph')}
           className={`t-meta px-2 py-1 rounded border ${tab === 'graph' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
-Кто с кем связан
+Связи простыми словами
         </button>
         <button
           onClick={() => setTab('graph3d')}
           className={`t-meta px-2 py-1 rounded border ${tab === 'graph3d' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
-Визуальная карта
+Карта
         </button>
         <button
           onClick={() => setTab('evidence')}
           className={`t-meta px-2 py-1 rounded border ${tab === 'evidence' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
-Подтверждения
+Факты и источники
         </button>
       </div>
       <div className="px-3 py-2 border-b border-zinc-900">
-        <p className="t-meta text-zinc-500">Здесь объясняется, как участники сюжета связаны между собой.</p>
+        <p className="t-meta text-zinc-500">{tabHint}</p>
       </div>
 
       {tab === 'graph' && (

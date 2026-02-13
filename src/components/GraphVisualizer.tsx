@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useGraph } from '@/lib/graph-provider';
-import { getCountry } from '@/mock/data';
+import { ARTICLES, getCountry, getNarrative } from '@/mock/data';
 import { fetchNeighbors, focusToGraphNodeId } from '@/lib/graph/client';
 import type { NeighborsResponse } from '@/lib/graph/types';
 import type { NodeType } from '@/types/ontology';
@@ -14,10 +14,14 @@ function NodeTypeLabel({ type, id }: { type: NodeType; id: string | number }) {
       const c = getCountry(String(id));
       return <span>{c?.flag} {c?.nameRu || id}</span>;
     }
-    case 'Narrative':
-      return <span>📰 Сюжет №{id}</span>;
-    case 'Article':
-      return <span>📄 Статья №{id}</span>;
+    case 'Narrative': {
+      const n = getNarrative(Number(id));
+      return <span>📰 {n?.titleRu || `Сюжет №${id}`}</span>;
+    }
+    case 'Article': {
+      const a = ARTICLES.find((x) => x.id === Number(id));
+      return <span>📄 {a?.title || `Статья №${id}`}</span>;
+    }
     default:
       return <span>{type} #{id}</span>;
   }
@@ -60,7 +64,7 @@ export function GraphVisualizer() {
   if (!state.focus) {
     return (
       <div className="p-4">
-        <h2 className="t-display font-semibold text-white mb-3">🕸️ Карта связей</h2>
+        <h2 className="t-display font-semibold text-white mb-3">🕸️ Кто с кем связан</h2>
         <div className="t-body text-zinc-500 text-center py-8">
           Выберите объект чтобы увидеть его связи
         </div>
@@ -75,14 +79,14 @@ export function GraphVisualizer() {
 
   return (
     <div className="p-4">
-      <h2 className="t-display font-semibold text-white mb-3">🕸️ Карта связей</h2>
+      <h2 className="t-display font-semibold text-white mb-3">🕸️ Кто с кем связан</h2>
 
       <div className="text-center mb-4">
         <div className="inline-block px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/50">
           <div className="t-body font-medium text-blue-300">
             <NodeTypeLabel type={state.focus.nodeType} id={state.focus.nodeId} />
           </div>
-          <div className="t-meta text-blue-400/60">{graphNodeId}</div>
+          <div className="t-meta text-blue-400/60">Выбранная точка для просмотра связей</div>
         </div>
       </div>
 
@@ -94,7 +98,7 @@ export function GraphVisualizer() {
             {Object.entries(grouped).map(([relation, count]) => (
               <div key={relation} className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50">
                 <span className="t-body text-zinc-300">{relationLabel(relation)}</span>
-                <span className="t-body text-white font-semibold">{count}</span>
+                <span className="t-meta text-white font-semibold">{count} связи</span>
               </div>
             ))}
             {neighbors.length === 0 && (
