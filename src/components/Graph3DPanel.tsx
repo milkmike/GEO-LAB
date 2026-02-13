@@ -23,6 +23,10 @@ type GraphLink = {
   confidence: number;
 };
 
+type Pos = { x: number; y: number };
+
+type KindFilter = 'all' | 'person' | 'org' | 'place' | 'event';
+
 function colorByKind(kind: string): string {
   switch (kind) {
     case 'person': return '#60a5fa';
@@ -33,13 +37,24 @@ function colorByKind(kind: string): string {
   }
 }
 
+function clamp01(x: number): number {
+  return Math.max(0, Math.min(1, x));
+}
+
 export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   const [subgraph, setSubgraph] = useState<SubgraphResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fgRef = useRef<{ zoomToFit: (ms?: number, px?: number) => void } | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [renderMode, setRenderMode] = useState<'svg' | '2d' | '3d'>('svg');
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [minConfidence, setMinConfidence] = useState(0.5);
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [dragPositions, setDragPositions] = useState<Record<string, Pos>>({});
 
   useEffect(() => {
     if (!nodeId) return;
@@ -47,6 +62,8 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
       .then((data) => {
         setSubgraph(data);
         setError(null);
+        setSelectedNodeId(data.center);
+        setDragPositions({});
       })
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : 'graph load failed');
@@ -99,36 +116,76 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
       } catch {
         // noop
       }
-    }, 200);
+    }, 250);
     return () => clearTimeout(t);
   }, [graphData, renderMode]);
 
   const effectiveWidth = Math.max(size.width, 560);
   const effectiveHeight = Math.max(size.height, 420);
 
-  const svgLayout = useMemo(() => {
+  const baseLayout = useMemo(() => {
     if (!graphData) return null;
 
     const cx = effectiveWidth / 2;
     const cy = effectiveHeight / 2;
-    const radius = Math.max(80, Math.min(effectiveWidth, effectiveHeight) * 0.35);
+    const radius = Math.max(80, Math.min(effectiveWidth, effectiveHeight) * 0.34);
 
     const centerNode = graphData.nodes.find((n) => n.id === graphData.center) || graphData.nodes[0];
     const rest = graphData.nodes.filter((n) => n.id !== centerNode.id);
 
-    const positions = new Map<string, { x: number; y: number }>();
-    positions.set(centerNode.id, { x: cx, y: cy });
+    const pos = new Map<string, Pos>();
+    pos.set(centerNode.id, { x: cx, y: cy });
 
     rest.forEach((n, i) => {
       const a = (2 * Math.PI * i) / Math.max(rest.length, 1);
-      positions.set(n.id, {
+      pos.set(n.id, {
         x: cx + Math.cos(a) * radius,
         y: cy + Math.sin(a) * radius,
       });
     });
 
-    return { positions };
+    return pos;
   }, [graphData, effectiveHeight, effectiveWidth]);
+
+  const nodePos = (id: string): Pos | null => {
+    if (dragPositions[id]) return dragPositions[id];
+    return baseLayout?.get(id) || null;
+  };
+
+  const filtered = useMemo(() => {
+    if (!graphData) return null;
+
+    const nodes = graphData.nodes.filter((n) => kindFilter === 'all' || n.kind === kindFilter);
+    const nodeSet = new Set(nodes.map((n) => n.id));
+    const links = graphData.links.filter((l) => l.confidence >= minConfidence && nodeSet.has(l.source) && nodeSet.has(l.target));
+
+    return { nodes, links, nodeSet };
+  }, [graphData, kindFilter, minConfidence]);
+
+  const neighbors = useMemo(() => {
+    if (!filtered || !selectedNodeId) return new Set<string>();
+    const s = new Set<string>([selectedNodeId]);
+    for (const l of filtered.links) {
+      if (l.source === selectedNodeId) s.add(l.target);
+      if (l.target === selectedNodeId) s.add(l.source);
+    }
+    return s;
+  }, [filtered, selectedNodeId]);
+
+  const toSvgCoord = (ev: React.PointerEvent<SVGSVGElement>): Pos | null => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+
+    const rx = (ev.clientX - rect.left) / rect.width;
+    const ry = (ev.clientY - rect.top) / rect.height;
+
+    return {
+      x: rx * effectiveWidth,
+      y: ry * effectiveHeight,
+    };
+  };
 
   if (!nodeId) {
     return <div className="p-3 text-xs text-zinc-500">Открой кейс, чтобы увидеть граф.</div>;
@@ -138,29 +195,69 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
     return <div className="p-3 text-xs text-red-400">{error}</div>;
   }
 
-  if (!graphData) {
+  if (!graphData || !filtered) {
     return <div className="p-3 text-xs text-zinc-500">Загрузка графа...</div>;
   }
 
   return (
     <div className="h-full w-full flex flex-col">
-      <div className="px-3 pt-2 pb-1 text-xs text-zinc-500 flex items-center justify-between">
-        <span>{renderMode.toUpperCase()} subgraph · {graphData.nodes.length} nodes / {graphData.links.length} links · {effectiveWidth}×{effectiveHeight}</span>
+      <div className="px-3 pt-2 pb-1 text-xs text-zinc-500 flex items-center justify-between gap-2 flex-wrap">
+        <span>{renderMode.toUpperCase()} · {filtered.nodes.length} nodes / {filtered.links.length} links</span>
         <div className="flex gap-1">
-          <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode==='svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>SVG</button>
-          <button onClick={() => setRenderMode('2d')} className={`px-2 py-0.5 rounded ${renderMode==='2d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>2D</button>
-          <button onClick={() => setRenderMode('3d')} className={`px-2 py-0.5 rounded ${renderMode==='3d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>3D</button>
+          <button onClick={() => setRenderMode('svg')} className={`px-2 py-0.5 rounded ${renderMode === 'svg' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>SVG</button>
+          <button onClick={() => setRenderMode('2d')} className={`px-2 py-0.5 rounded ${renderMode === '2d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>2D</button>
+          <button onClick={() => setRenderMode('3d')} className={`px-2 py-0.5 rounded ${renderMode === '3d' ? 'bg-zinc-700 text-white' : 'bg-zinc-800 text-zinc-300'}`}>3D</button>
         </div>
       </div>
 
+      <div className="px-3 pb-2 text-[11px] text-zinc-500 flex items-center gap-2 flex-wrap">
+        <span>conf ≥</span>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={minConfidence}
+          onChange={(e) => setMinConfidence(clamp01(Number(e.target.value)))}
+        />
+        <span>{minConfidence.toFixed(2)}</span>
+        <select
+          value={kindFilter}
+          onChange={(e) => setKindFilter(e.target.value as KindFilter)}
+          className="bg-zinc-900 border border-zinc-700 rounded px-1 py-0.5"
+        >
+          <option value="all">all</option>
+          <option value="person">person</option>
+          <option value="org">org</option>
+          <option value="place">place</option>
+          <option value="event">event</option>
+        </select>
+      </div>
+
       <div ref={containerRef} className="flex-1 min-h-0 relative">
-        {renderMode === 'svg' && svgLayout && (
-          <svg width="100%" height="100%" viewBox={`0 0 ${effectiveWidth} ${effectiveHeight}`} style={{ background: '#09090b' }}>
+        {renderMode === 'svg' && baseLayout && (
+          <svg
+            ref={svgRef}
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${effectiveWidth} ${effectiveHeight}`}
+            style={{ background: '#09090b', touchAction: 'none' }}
+            onPointerMove={(e) => {
+              if (!draggedNodeId) return;
+              const p = toSvgCoord(e);
+              if (!p) return;
+              setDragPositions((prev) => ({ ...prev, [draggedNodeId]: p }));
+            }}
+            onPointerUp={() => setDraggedNodeId(null)}
+            onPointerLeave={() => setDraggedNodeId(null)}
+          >
             <rect x="1" y="1" width={effectiveWidth - 2} height={effectiveHeight - 2} fill="transparent" stroke="#334155" strokeWidth="1" />
-            {graphData.links.map((l, i) => {
-              const a = svgLayout.positions.get(l.source);
-              const b = svgLayout.positions.get(l.target);
+
+            {filtered.links.map((l, i) => {
+              const a = nodePos(l.source);
+              const b = nodePos(l.target);
               if (!a || !b) return null;
+              const isNeighborLink = selectedNodeId && (l.source === selectedNodeId || l.target === selectedNodeId);
               return (
                 <line
                   key={`${l.source}-${l.target}-${i}`}
@@ -168,20 +265,46 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
                   y1={a.y}
                   x2={b.x}
                   y2={b.y}
-                  stroke={l.confidence >= 0.9 ? '#d4d4d8' : '#52525b'}
+                  stroke={isNeighborLink ? '#f8fafc' : '#6b7280'}
                   strokeWidth={Math.max(1, l.confidence * 2.5)}
-                  opacity={0.9}
+                  opacity={selectedNodeId ? (isNeighborLink ? 0.95 : 0.25) : 0.75}
                 />
               );
             })}
 
-            {graphData.nodes.map((n) => {
-              const p = svgLayout.positions.get(n.id);
+            {filtered.nodes.map((n) => {
+              const p = nodePos(n.id);
               if (!p) return null;
+              const selected = n.id === selectedNodeId;
+              const neighbor = neighbors.has(n.id);
               return (
-                <g key={n.id}>
-                  <circle cx={p.x} cy={p.y} r={n.val} fill={n.color} stroke="#18181b" strokeWidth={1} />
-                  <text x={p.x + n.val + 3} y={p.y + 4} fill="#d4d4d8" fontSize="11">{n.name}</text>
+                <g
+                  key={n.id}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    setDraggedNodeId(n.id);
+                  }}
+                  onClick={() => setSelectedNodeId(n.id)}
+                  style={{ cursor: 'grab' }}
+                >
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r={selected ? n.val + 2 : n.val}
+                    fill={n.color}
+                    stroke={selected ? '#ffffff' : '#18181b'}
+                    strokeWidth={selected ? 2 : 1}
+                    opacity={selectedNodeId ? (neighbor ? 1 : 0.35) : 1}
+                  />
+                  <text
+                    x={p.x + n.val + 4}
+                    y={p.y + 4}
+                    fill={selected ? '#ffffff' : '#d4d4d8'}
+                    fontSize="11"
+                    opacity={selectedNodeId ? (neighbor ? 1 : 0.4) : 1}
+                  >
+                    {n.name}
+                  </text>
                 </g>
               );
             })}
@@ -194,7 +317,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
             ref={fgRef}
             width={size.width}
             height={size.height}
-            graphData={graphData}
+            graphData={filtered}
             backgroundColor="#09090b"
             nodeLabel={(n: GraphNode) => `${n.name} (${n.kind})`}
             nodeColor={(n: GraphNode) => n.color}
@@ -214,7 +337,7 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
             ref={fgRef}
             width={size.width}
             height={size.height}
-            graphData={graphData}
+            graphData={filtered}
             backgroundColor="#09090b"
             nodeLabel={(n: GraphNode) => `${n.name} (${n.kind})`}
             nodeColor={(n: GraphNode) => n.color}
