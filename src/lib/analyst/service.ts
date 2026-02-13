@@ -195,8 +195,12 @@ export async function getCaseWorkspace(narrativeId: number) {
   const liveEvents = eventPayloads.flatMap((payload) => payload?.events || []);
   const timeline = buildRichTimeline(timelineBase, liveEvents);
 
-  const neighbors = getNeighbors(`narrative:${narrativeId}`).neighbors
-    .filter((n) => n.node.id.startsWith('person:') || n.node.id.startsWith('org:') || n.node.id.startsWith('place:'))
+  const allNeighbors = getNeighbors(`narrative:${narrativeId}`).neighbors;
+  const focusedNeighbors = allNeighbors.filter(
+    (n) => n.node.id.startsWith('person:') || n.node.id.startsWith('org:') || n.node.id.startsWith('place:'),
+  );
+
+  const neighbors = (focusedNeighbors.length ? focusedNeighbors : allNeighbors)
     .slice(0, 30)
     .map((n) => ({
       id: n.node.id,
