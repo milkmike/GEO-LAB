@@ -149,7 +149,11 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         isTurningPoint: Math.abs(a.sentiment) >= 0.6,
       }))).slice(0, 14);
 
-  const intro = brief?.bullets?.[0] || `Сюжет: ${narrative.titleRu}`;
+  const rawIntro = brief?.bullets?.[0] || `Сюжет: ${narrative.titleRu}`;
+  const intro = rawIntro
+    .replace(/,\s*расхождени[ея]\s*\d+%\.?/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
   return (
     <div className="space-y-4">
@@ -158,7 +162,7 @@ function NarrativeDetail({ narrativeId }: { narrativeId: number }) {
         <h2 className="t-display text-white font-semibold">{narrative.titleRu}</h2>
         <p className="t-body text-zinc-400">{intro}</p>
         <div className="t-meta text-zinc-500 mt-1">
-          {narrativeStatusLabel(narrative.status)} · уровень споров {narrative.divergenceScore}%
+          {narrativeStatusLabel(narrative.status)}
         </div>
       </div>
 
