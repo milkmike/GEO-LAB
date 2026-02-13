@@ -25,19 +25,19 @@ export function RightRail() {
       <div className="p-2 border-b border-zinc-800 flex gap-2">
         <button
           onClick={() => setTab('graph')}
-          className={`text-xs px-2 py-1 rounded ${tab === 'graph' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400'}`}
+          className={`text-xs px-2 py-1 rounded border ${tab === 'graph' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
           Graph
         </button>
         <button
           onClick={() => setTab('graph3d')}
-          className={`text-xs px-2 py-1 rounded ${tab === 'graph3d' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400'}`}
+          className={`text-xs px-2 py-1 rounded border ${tab === 'graph3d' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
           3D
         </button>
         <button
           onClick={() => setTab('evidence')}
-          className={`text-xs px-2 py-1 rounded ${tab === 'evidence' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400'}`}
+          className={`text-xs px-2 py-1 rounded border ${tab === 'evidence' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-200' : 'border-zinc-700 bg-zinc-900 text-zinc-400'}`}
         >
           Evidence
         </button>

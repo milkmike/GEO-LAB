@@ -25,11 +25,11 @@ function GraphHealthBadge() {
   }, []);
 
   if (!health) {
-    return <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-500">graph: ...</span>;
+    return <span className="g-chip text-zinc-500">graph: ...</span>;
   }
 
   return (
-    <span className={`px-2 py-1 rounded ${health.status === 'ok' ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+    <span className={`g-chip ${health.status === 'ok' ? 'text-green-300 border-green-500/40' : 'text-yellow-300 border-yellow-500/40'}`}>
       graph: {health.status} · {health.entities}N/{health.edges}E
     </span>
   );
@@ -85,28 +85,28 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
   if (!hero) return null;
 
   return (
-    <div className={`${landing ? 'p-6 md:p-10' : 'px-4 py-2 border-b border-zinc-800 bg-zinc-950/80'}`}>
+    <div className={`${landing ? 'p-6 md:p-10' : 'px-4 py-2 border-b border-zinc-800 bg-zinc-950/70'}`}>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-xs uppercase tracking-wider text-zinc-500">Signal Deck</div>
+          <div className="g-kicker">Signal Deck</div>
           <div className="text-xs text-zinc-500">quality: {triage.quality.status} · aliases {triage.quality.aliasConflicts}</div>
         </div>
 
-        <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-5 mb-3">
-          <div className="text-xs text-orange-300 mb-1">MAIN SIGNAL · escalation {hero.divergence}%</div>
+        <div className="rounded-2xl g-panel-strong p-5 mb-3">
+          <div className="g-kicker mb-1">Main signal · escalation {hero.divergence}%</div>
           <h2 className="text-2xl md:text-3xl font-semibold text-white mb-2">{hero.title}</h2>
           <p className="text-sm text-zinc-400 mb-4">Главный кейс для старта аналитики: открой кейс и проверь timeline, actors, evidence.</p>
           <div className="flex gap-2">
             <button
               onClick={() => navigate('Narrative', hero.narrativeId, { relation: 'signal_deck_open_case', fromType: 'Country', fromId: hero.countries[0] || 'N/A' })}
-              className="px-3 py-2 rounded-lg bg-white text-black text-sm font-medium hover:opacity-90"
+              className="px-3 py-2 rounded-lg bg-cyan-300/90 text-black text-sm font-medium hover:bg-cyan-200"
             >
               Open case
             </button>
             {next[0] && (
               <button
                 onClick={() => navigate('Narrative', next[0].narrativeId, { relation: 'signal_deck_next_case', fromType: 'Country', fromId: next[0].countries[0] || 'N/A' })}
-                className="px-3 py-2 rounded-lg bg-zinc-800 text-zinc-200 text-sm hover:bg-zinc-700"
+                className="px-3 py-2 rounded-lg bg-zinc-900 text-zinc-200 text-sm border border-zinc-700 hover:border-cyan-600"
               >
                 Open next signal
               </button>
@@ -119,7 +119,7 @@ function SignalDeck({ landing = false }: { landing?: boolean }) {
             <button
               key={item.narrativeId}
               onClick={() => navigate('Narrative', item.narrativeId, { relation: 'signal_deck_pick', fromType: 'Country', fromId: item.countries[0] || 'N/A' })}
-              className="text-left rounded-xl border border-zinc-800 bg-zinc-900 p-3 hover:bg-zinc-800"
+              className="text-left rounded-xl g-panel p-3 hover:border-cyan-700"
             >
               <div className="text-xs text-orange-300 mb-1">{item.divergence}%</div>
               <div className="text-sm text-white line-clamp-2">{item.title}</div>
@@ -149,7 +149,7 @@ function ActiveCaseHeader() {
     .join(' · ');
 
   return (
-    <div className="sticky top-0 z-10 mb-3 rounded-xl border border-zinc-800 bg-zinc-950/95 px-3 py-2 backdrop-blur">
+    <div className="sticky top-0 z-10 mb-3 rounded-xl g-panel px-3 py-2">
       <div className="text-xs text-zinc-500">Active Case</div>
       <div className="text-sm text-white font-semibold line-clamp-1">{n.titleRu}</div>
       <div className="text-xs text-zinc-500">{countryLabels} · divergence {n.divergenceScore}%</div>
@@ -162,13 +162,13 @@ export default function Home() {
   const [leftCollapsed, setLeftCollapsed] = useState(true);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden g-shell">
       <Suspense fallback={null}>
         <UrlSyncWrapper />
       </Suspense>
       
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-950 px-4 py-3 flex items-center gap-3">
+      <header className="g-panel border-b px-4 py-3 flex items-center gap-3">
         <span className="text-2xl">🐙</span>
         <div>
           <h1 className="text-lg font-bold text-white">GeoPulse Lab</h1>
@@ -184,8 +184,8 @@ export default function Home() {
               {leftCollapsed ? '☰ Show rail' : '☰ Hide rail'}
             </button>
           )}
-          <span className="px-2 py-1 rounded bg-zinc-800">🧬 Ontology v1</span>
-          <span className="px-2 py-1 rounded bg-zinc-800">8 стран · 5 сюжетов · 10 статей</span>
+          <span className="g-chip">🧬 Ontology v1</span>
+          <span className="g-chip">8 стран · 5 сюжетов · 10 статей</span>
           <GraphHealthBadge />
         </div>
       </header>

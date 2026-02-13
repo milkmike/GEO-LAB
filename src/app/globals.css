@@ -124,5 +124,34 @@
   body {
     @apply bg-background text-foreground;
     @apply bg-background text-foreground;
+    background:
+      radial-gradient(1200px 500px at 15% -10%, rgba(34, 211, 238, 0.08), transparent 55%),
+      radial-gradient(900px 400px at 100% 0%, rgba(245, 158, 11, 0.08), transparent 45%),
+      linear-gradient(180deg, #070b12 0%, #05070c 100%);
+  }
+}
+
+@layer components {
+  .g-shell {
+    @apply text-zinc-100;
+    letter-spacing: 0.01em;
+  }
+
+  .g-panel {
+    @apply border border-zinc-800/90 bg-zinc-950/80 backdrop-blur;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 0 1px rgba(255,255,255,0.01);
+  }
+
+  .g-panel-strong {
+    @apply border border-cyan-500/30 bg-zinc-950/85;
+    box-shadow: inset 0 1px 0 rgba(34,211,238,0.18), 0 0 30px rgba(34,211,238,0.08);
+  }
+
+  .g-chip {
+    @apply rounded-md border border-zinc-700/80 bg-zinc-900/85 px-2 py-1 text-[11px] text-zinc-300;
+  }
+
+  .g-kicker {
+    @apply text-[11px] uppercase tracking-[0.14em] text-zinc-400;
   }
 }
