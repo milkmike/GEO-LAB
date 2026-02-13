@@ -48,10 +48,11 @@ function isRelevantToNarrative(title: string, narrativeTerms: string[]): boolean
   const normalizedTitle = normalizeText(title);
   if (!normalizedTitle || narrativeTerms.length === 0) return false;
 
+  const broadTerms = new Set(['газ', 'транзит']);
   const matches = narrativeTerms.filter((term) => normalizedTitle.includes(term));
   if (matches.length === 0) return false;
 
-  const hasSpecificLongTerm = matches.some((term) => term.length >= 6);
+  const hasSpecificLongTerm = matches.some((term) => term.length >= 6 && !broadTerms.has(term));
   const hasLatinToken = matches.some((term) => /[a-z]/i.test(term));
 
   if (hasSpecificLongTerm || hasLatinToken) return true;
