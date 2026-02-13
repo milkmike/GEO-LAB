@@ -23,7 +23,7 @@ type GraphLink = {
   confidence: number;
 };
 
-type GraphNodeRender = GraphNode & { x?: number; y?: number };
+/* no extra render-only type */
 
 function colorByKind(kind: string): string {
   switch (kind) {
@@ -159,23 +159,14 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
             graphData={graphData}
             backgroundColor="#09090b"
             nodeLabel={(n: GraphNode) => `${n.name} (${n.kind})`}
-            nodeCanvasObject={(node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-              const n = node as GraphNodeRender;
-              const label = n.name;
-              const fontSize = Math.max(8 / globalScale, 3);
-              const x = n.x ?? 0;
-              const y = n.y ?? 0;
-              ctx.beginPath();
-              ctx.fillStyle = n.color;
-              ctx.arc(x, y, Math.max(2, n.val / 2), 0, 2 * Math.PI, false);
-              ctx.fill();
-              ctx.font = `${fontSize}px Sans-Serif`;
-              ctx.fillStyle = '#d4d4d8';
-              ctx.fillText(label, x + 4, y + 4);
-            }}
-            linkColor={(l: GraphLink) => (l.confidence >= 0.9 ? '#a1a1aa' : '#52525b')}
-            linkWidth={(l: GraphLink) => Math.max(0.5, l.confidence * 2)}
-            cooldownTicks={90}
+            nodeColor={(n: GraphNode) => n.color}
+            nodeVal={(n: GraphNode) => Math.max(2, n.val)}
+            nodeRelSize={3}
+            linkColor={(l: GraphLink) => (l.confidence >= 0.9 ? '#d4d4d8' : '#52525b')}
+            linkWidth={(l: GraphLink) => Math.max(1, l.confidence * 2.5)}
+            linkDirectionalParticles={1}
+            linkDirectionalParticleWidth={(l: GraphLink) => Math.max(1, l.confidence * 2)}
+            cooldownTicks={120}
           />
         )}
       </div>
