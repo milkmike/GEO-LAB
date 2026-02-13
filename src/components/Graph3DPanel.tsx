@@ -88,10 +88,12 @@ export function Graph3DPanel({ nodeId }: { nodeId: string | null }) {
   }, [subgraph]);
 
   useEffect(() => {
-    if (!fgRef.current || !graphData) return;
+    if (!graphData) return;
     const t = setTimeout(() => {
+      const fg = fgRef.current;
+      if (!fg) return;
       try {
-        fgRef.current.zoomToFit(400, 40);
+        fg.zoomToFit(400, 40);
       } catch {
         // noop
       }
