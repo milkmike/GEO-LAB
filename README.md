@@ -1,102 +1,204 @@
-# GeoPulse Lab
+# GEO-LAB
 
-Лабораторный стенд для графовой модели GeoPulse (ontology graph + API для подграфов).
+**Timeline-first analyst backend** для исследования медиапотоков по странам, сюжетам и сущностям.
 
-## Ключевые архитектурные документы
+GEO-LAB можно использовать как API-продукт без фронтенда: сервис отдаёт timeline, graph, explainability и signal-layer ответы для аналитических сценариев.
 
-- `TIMELINE_ARCHITECTURE.md` — контракт timeline-first архитектуры (scope: Country / Narrative / Entity / Article)
-- `PLAIN_LANGUAGE_SPEC.md` — правила простого языка и UX-понятности
-- `docs/lab/architecture.md` — базовая архитектура репозитория и release-контур
-- `docs/lab/WAVE_1_IMPLEMENTATION.md` — что именно реализовано в Wave 1 (infra/graph/workbench), как проверять и что дальше
-- `docs/api/openapi.analyst.yaml` — OpenAPI-контракт analyst endpoints (Wave-2 / S3-REL)
-- `docs/api/examples/` — эталонные JSON-ответы analyst endpoints
-- `docs/release/wave-3-s5-operator-guide.md` — как оператору интерпретировать forecast/alerts/trust в signal layer
-- `docs/release/wave-3-s5-verification-rollback.md` — чеклист проверки и rollback для S5
-- `docs/release/wave-3-s5-known-risks.md` — known risks + mitigation playbook
+---
 
-## Что уже есть
+## 1) Что это и зачем
 
-- UI-прототип навигации по онтологии (Country/Narrative/Article/...)
-- Graph API:
-  - `GET /api/graph/neighbors?nodeId=<id>`
-  - `GET /api/graph/subgraph?nodeId=<id>&depth=1..3`
-  - `GET /api/admin/graph-health`
-  - `GET /api/admin/monitoring` (latency/error/freshness hooks snapshot)
-- Канонические сущности `person/org/place/event`
-- Рёбра с `confidence`, `evidence`, `validFrom/validTo`
-- Analyst API (timeline/graph/query/explain) с explainability-полями `whyIncluded`, `relevanceScore`, `confidence`, `evidence`
+GEO-LAB решает задачу: **быстро объяснимо ответить “что происходит, почему это важно, и где сигнал/шум”**.
 
-## Примеры
+Ключевая модель:
+- **Country scope** — лента страны
+- **Narrative scope** — лента конкретного сюжета
+- **Entity scope** — лента вокруг сущности (персона/организация/место)
 
-```bash
-curl 'http://localhost:3000/api/admin/graph-health'
-curl 'http://localhost:3000/api/graph/neighbors?nodeId=narrative:2'
-curl 'http://localhost:3000/api/graph/subgraph?nodeId=narrative:2&depth=2'
+Важно: scopes не должны смешиваться по смыслу.
 
-# analyst endpoints
-curl 'http://localhost:3000/api/analyst/triage'
-curl 'http://localhost:3000/api/analyst/case?narrativeId=2'
-curl 'http://localhost:3000/api/analyst/brief?narrativeId=2'
-curl 'http://localhost:3000/api/analyst/country?code=KZ'
-curl 'http://localhost:3000/api/analyst/entity?entity=%D0%A0%D0%BE%D1%81%D1%81%D0%B8%D1%8F&countries=KZ,BY'
+---
 
-# Wave-3 signal layer
-curl 'http://localhost:3000/api/analyst/forecast?scope=narrative&narrativeId=2&windowHours=24'
-curl 'http://localhost:3000/api/analyst/alerts?scope=country&code=GE&windowHours=72'
-curl 'http://localhost:3000/api/analyst/trust?scope=entity&entity=%D0%93%D0%B0%D0%B7%D0%BF%D1%80%D0%BE%D0%BC&windowHours=24'
-curl 'http://localhost:3000/api/analyst/briefing?scope=narrative&narrativeId=2&windowHours=72'
+## 2) Текущий статус (честно)
+
+- Прод: `https://lab.massaraksh.tech`
+- Основной live-источник: `https://massaraksh.tech` (GeoPulse Core API)
+- Graph-слой внутри LAB сейчас работает через **in-memory mock repository** (`src/lib/graph/repositories/mock-graph.repository.ts`)
+- Retrieval/temporal слой в LAB уже использует live-данные из Core для части сценариев
+
+То есть сейчас архитектура гибридная: **live + mock**.
+
+---
+
+## 3) Архитектура backend-only
+
+```text
+GeoPulse Core (massaraksh.tech)
+  └─ /api/v1/countries, /events, ...
+        ↓
+GEO-LAB Retrieval + Temporal + Rerank
+  └─ scope-aware timeline/query/explain/signal endpoints
+        ↓
+GEO-LAB Graph Service
+  └─ subgraph/neighbors/health (на текущем этапе: mock graph repository)
 ```
 
-## Запуск
+Слои в GEO-LAB:
+1. **API routes** (`src/app/api/*`)  
+2. **Analyst service** (`src/lib/analyst/service.ts`)  
+3. **Retrieval/Temporal/Rerank** (`src/lib/analyst/retrieval`, `src/lib/temporal`)  
+4. **Graph domain/service/repository** (`src/lib/graph/*`)  
+5. **Monitoring hooks** (`src/lib/monitoring/*`)
+
+---
+
+## 4) Быстрый старт
+
+### Прод (основной сценарий)
+
+```bash
+BASE='https://lab.massaraksh.tech'
+```
+
+### Локально (разработка)
 
 ```bash
 npm ci
 npm run dev
+# then BASE='http://localhost:3000'
 ```
 
-## Git branch convention
+---
 
-Используем единый формат для рабочих веток лаборатории:
+## 5) API smoke-test (без фронтенда)
+
+```bash
+# prod by default
+BASE='https://lab.massaraksh.tech'
+# local option:
+# BASE='http://localhost:3000'
+
+# graph/admin
+curl "$BASE/api/admin/graph-health"
+curl "$BASE/api/admin/monitoring"
+curl "$BASE/api/graph/neighbors?nodeId=narrative:2"
+curl "$BASE/api/graph/subgraph?nodeId=narrative:2&depth=2"
+
+# analyst core (scope-aware)
+curl "$BASE/api/analyst/timeline?scope=country&code=KZ"
+curl "$BASE/api/analyst/timeline?scope=narrative&narrativeId=1"
+curl "$BASE/api/analyst/query?scope=country&code=KZ&includeTimeline=true&includeGraph=true"
+curl "$BASE/api/analyst/graph?scope=narrative&narrativeId=1"
+curl "$BASE/api/analyst/explain?scope=country&code=KZ&articleId=101"
+
+# signal layer
+curl "$BASE/api/analyst/forecast?scope=narrative&narrativeId=1&windowHours=24"
+curl "$BASE/api/analyst/alerts?scope=country&code=GE&windowHours=72"
+curl "$BASE/api/analyst/trust?scope=entity&entity=%D0%93%D0%B0%D0%B7%D0%BF%D1%80%D0%BE%D0%BC&windowHours=24"
+curl "$BASE/api/analyst/briefing?scope=narrative&narrativeId=1&windowHours=72"
+```
+
+---
+
+## 6) Endpoint map
+
+### Analyst (актуальные)
+- `GET /api/analyst/timeline` — timeline по scope (country/narrative/entity)
+- `GET /api/analyst/graph` — граф по scope
+- `GET /api/analyst/query` — агрегированный ответ (timeline + graph)
+- `GET /api/analyst/explain` — explainability по элементу
+- `GET /api/analyst/forecast` — forecast сигнал
+- `GET /api/analyst/alerts` — alerting сигнал
+- `GET /api/analyst/trust` — trust/качество сигнала
+- `GET /api/analyst/briefing` — краткий аналитический бриф
+
+### Analyst (legacy, совместимость)
+- `GET /api/analyst/triage`
+- `GET /api/analyst/case`
+- `GET /api/analyst/brief`
+- `GET /api/analyst/country`
+- `GET /api/analyst/entity`
+
+### Graph/Admin
+- `GET /api/graph/neighbors`
+- `GET /api/graph/subgraph`
+- `GET /api/admin/graph-health`
+- `GET /api/admin/monitoring`
+
+---
+
+## 7) Explainability contract
+
+Каждый релевантный элемент в аналитических выдачах должен быть объясним:
+- `whyIncluded`
+- `relevanceScore`
+- `confidence`
+- `evidence`
+
+Это обязательный слой доверия, а не optional metadata.
+
+---
+
+## 8) Качество, регрессии, release readiness
+
+```bash
+# dynamic eval temporal/retrieval
+npm run eval:harness
+
+# regression for analyst flows + signal layer
+npm run test:regression
+
+# machine-readable GO/NO_GO report
+npm run report:release-readiness
+
+# CI release pipeline
+npm run release
+```
+
+Артефакты:
+- `artifacts/evals/*.json`
+- `artifacts/reports/s6-release-readiness.json`
+
+---
+
+## 9) Переменные окружения
+
+- `GEOPULSE_API_BASE_URL` — базовый URL Core API (default: `https://massaraksh.tech`)
+- `BASE_URL` — базовый URL для скриптов/eval
+- `EVAL_SCENARIOS_PATH`
+- `EVAL_BASELINE_PATH`
+- `EVAL_OUT_PATH`
+- `REGRESSION_OUT_PATH`
+- `RELEASE_REPORT_PATH`
+- `MOCK_PORT`
+- `MODE_FILE`
+
+---
+
+## 10) Ограничения текущей версии
+
+1. Graph repository пока mock/in-memory (не внешняя graph DB).  
+2. Narrative relevance в широких/шумных запросах может деградировать.  
+3. Гибрид live+mock требует аккуратного контроля source-of-truth на проде.  
+
+---
+
+## 11) Документация
+
+- `docs/lab/architecture.md` — архитектурный baseline
+- `docs/lab/WAVE_1_IMPLEMENTATION.md` — Wave 1 детали
+- `docs/api/openapi.analyst.yaml` — analyst OpenAPI
+- `docs/api/examples/` — примеры ответов
+- `docs/release/` — release guides, verification, rollback, risks
+- `TIMELINE_ARCHITECTURE.md` — timeline-first контракт
+- `PLAIN_LANGUAGE_SPEC.md` — plain-language правила
+
+---
+
+## 12) Branching convention
 
 ```text
 lab/<stream>/<task>
 ```
 
-Пример: `lab/s0-code/ci-baseline`.
-
-## Preview env для feature-веток
-
-Минимальный скрипт для локальной подготовки preview-переменных:
-
-```bash
-npm run preview:env
-# или явно
-npm run preview:env -- lab/s0-code/ci-baseline
-```
-
-Скрипт создаёт `.env.preview.local` с переменными `NEXT_PUBLIC_DEPLOY_ENV`, `NEXT_PUBLIC_PREVIEW_BRANCH`, `NEXT_PUBLIC_PREVIEW_SLUG`.
-
-## Release readiness / hardening (Wave-3 S6)
-
-```bash
-# динамический eval temporal/retrieval
-npm run eval:harness
-
-# регрессии ключевых analyst flow + signal endpoints
-npm run test:regression
-
-# единый machine-readable go/no-go отчёт
-npm run report:release-readiness
-```
-
-Артефакты пишутся в `artifacts/evals/*.json` и `artifacts/reports/s6-release-readiness.json`.
-
-## Прод-сборка
-
-```bash
-npm run release
-```
-
-`release` прогоняет lint + typecheck + unit tests и только затем собирает проект.
-
-> Для Docker используется `output: "standalone"` в `next.config.ts`.
+Пример: `lab/s0-code/ci-baseline`
