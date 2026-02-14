@@ -1,0 +1,26 @@
+{
+  "escalations": [
+    {
+      "narrativeId": 5,
+      "title": "Нормализация армяно-азербайджанских отношений",
+      "divergence": 91,
+      "status": "active",
+      "countries": ["AM", "AZ", "GE"]
+    }
+  ],
+  "newest": [
+    {
+      "narrativeId": 2,
+      "title": "Курс на интеграцию с ЕС",
+      "lastSeen": "2026-02-13T21:41:41.540564+00:00",
+      "articleCount": 1438
+    }
+  ],
+  "quality": {
+    "status": "ok",
+    "entities": 14,
+    "edges": 21,
+    "aliasConflicts": 2
+  },
+  "generatedAt": "2026-02-13T22:03:04.571Z"
+}

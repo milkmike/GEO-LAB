@@ -1,0 +1,6 @@
+{
+  "missingNarrativeId": { "error": "narrativeId is required", "code": "bad_request" },
+  "missingCode": { "error": "code is required", "code": "bad_request" },
+  "missingEntity": { "error": "entity is required", "code": "bad_request" },
+  "notFound": { "error": "not found" }
+}

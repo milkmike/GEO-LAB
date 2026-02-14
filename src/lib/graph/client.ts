@@ -1,6 +1,32 @@
 import type { NeighborsResponse, SubgraphResponse } from './types';
 import type { GraphFocus } from '@/types/ontology';
 
+type MaybeApiError = {
+  error?: string;
+  code?: string;
+};
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: 'no-store' });
+
+  if (!res.ok) {
+    let message = `${res.status}`;
+
+    try {
+      const payload = (await res.json()) as MaybeApiError;
+      if (payload.error) {
+        message = payload.code ? `${payload.error} (${payload.code})` : payload.error;
+      }
+    } catch {
+      // no-op
+    }
+
+    throw new Error(message);
+  }
+
+  return res.json() as Promise<T>;
+}
+
 export function focusToGraphNodeId(focus: GraphFocus): string {
   switch (focus.nodeType) {
     case 'Country':
@@ -23,23 +49,13 @@ export function focusToGraphNodeId(focus: GraphFocus): string {
 }
 
 export async function fetchNeighbors(nodeId: string): Promise<NeighborsResponse> {
-  const res = await fetch(`/api/graph/neighbors?nodeId=${encodeURIComponent(nodeId)}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`neighbors failed: ${res.status}`);
-  return res.json();
+  return fetchJson<NeighborsResponse>(`/api/graph/neighbors?nodeId=${encodeURIComponent(nodeId)}`);
 }
 
 export async function fetchSubgraph(nodeId: string, depth = 2): Promise<SubgraphResponse> {
-  const res = await fetch(`/api/graph/subgraph?nodeId=${encodeURIComponent(nodeId)}&depth=${depth}`, {
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`subgraph failed: ${res.status}`);
-  return res.json();
+  return fetchJson<SubgraphResponse>(`/api/graph/subgraph?nodeId=${encodeURIComponent(nodeId)}&depth=${depth}`);
 }
 
 export async function fetchGraphHealth(): Promise<{ status: string; entities: number; edges: number }> {
-  const res = await fetch('/api/admin/graph-health', { cache: 'no-store' });
-  if (!res.ok) throw new Error(`graph-health failed: ${res.status}`);
-  return res.json();
+  return fetchJson<{ status: string; entities: number; edges: number }>('/api/admin/graph-health');
 }

@@ -1,0 +1,18 @@
+{
+  "entity": "Россия",
+  "countries": ["KZ", "BY"],
+  "timeline": [
+    {
+      "articleId": 980000,
+      "title": "Леонид Заяц: Беларусь и Россия планируют создать селекционно-гибридные центры в АПК",
+      "source": "Совет Министров РБ",
+      "publishedAt": "2022-06-29T00:00:00+00:00",
+      "sentiment": 2,
+      "stance": "pro_russia",
+      "relevanceScore": 2,
+      "whyIncluded": "Есть упоминание: Россия",
+      "countryCode": "BY"
+    }
+  ],
+  "generatedAt": "2026-02-13T22:03:15.001Z"
+}

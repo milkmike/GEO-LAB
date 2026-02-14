@@ -29,6 +29,11 @@
 - [ ] `GET /api/admin/graph-health` returns healthy payload
 - [ ] `GET /api/graph/neighbors?nodeId=narrative:2` returns nodes/edges
 - [ ] `GET /api/graph/subgraph?nodeId=narrative:2&depth=2` returns bounded subgraph
+- [ ] `GET /api/analyst/triage` returns triage payload
+- [ ] `GET /api/analyst/case?narrativeId=2` returns case workspace
+- [ ] `GET /api/analyst/brief?narrativeId=2` returns brief payload
+- [ ] `GET /api/analyst/country?code=KZ` returns country workspace
+- [ ] `GET /api/analyst/entity?entity=Россия&countries=KZ,BY` returns entity workspace
 
 ### UI smoke
 - [ ] Home page renders without runtime errors

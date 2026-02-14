@@ -1,6 +1,4 @@
-import { NextResponse } from 'next/server';
 import { graphHealth } from '@/lib/graph/query';
+import { apiJson, withApiErrorHandlingNoRequest } from '@/lib/api/http';
 
-export async function GET() {
-  return NextResponse.json(graphHealth());
-}
+export const GET = withApiErrorHandlingNoRequest(() => apiJson(graphHealth()));

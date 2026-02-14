@@ -14,6 +14,7 @@
     "preview:env": "node scripts/preview-env.js",
     "ci:validate": "node scripts/ci/run-task-group.js validate",
     "ci:release": "node scripts/ci/run-task-group.js release",
+    "benchmark:retrieval": "node scripts/benchmark-retrieval.js",
     "release": "npm run ci:release"
   },
   "dependencies": {

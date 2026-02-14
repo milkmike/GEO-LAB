@@ -1,0 +1,506 @@
+openapi: 3.1.0
+info:
+  title: GEO-LAB Analyst API
+  version: "0.2.0-s3"
+  description: |
+    Analyst endpoints used by the GEO-LAB workbench.
+
+    Notes:
+    - All endpoints are read-only (GET).
+    - Responses are generated from mixed live+mock sources.
+    - `generatedAt` uses ISO-8601 UTC.
+servers:
+  - url: http://localhost:3000
+    description: Local dev
+paths:
+  /api/analyst/triage:
+    get:
+      summary: Get triage dashboard payload
+      operationId: getAnalystTriage
+      responses:
+        "200":
+          description: Triage feed returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriageResponse"
+              examples:
+                default:
+                  value:
+                    escalations:
+                      - narrativeId: 5
+                        title: Нормализация армяно-азербайджанских отношений
+                        divergence: 91
+                        status: active
+                        countries: [AM, AZ, GE]
+                    newest:
+                      - narrativeId: 2
+                        title: Курс на интеграцию с ЕС
+                        lastSeen: "2026-02-13T21:41:41.540564+00:00"
+                        articleCount: 1438
+                    quality:
+                      status: ok
+                      entities: 14
+                      edges: 21
+                      aliasConflicts: 2
+                    generatedAt: "2026-02-13T22:03:04.571Z"
+
+  /api/analyst/case:
+    get:
+      summary: Get analyst case workspace for one narrative
+      operationId: getAnalystCase
+      parameters:
+        - in: query
+          name: narrativeId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: Narrative identifier
+      responses:
+        "200":
+          description: Case workspace returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseResponse"
+              examples:
+                default:
+                  value:
+                    narrative:
+                      id: 2
+                      title: Курс на интеграцию с ЕС
+                      status: active
+                      divergence: 1
+                      articleCount: 1438
+                      keywords: [ЕС, евроинтеграция, визы, ассоциация]
+                    countries:
+                      - id: GE
+                        label: "🇬🇪 Грузия · индекс -21"
+                    timeline:
+                      - articleId: 900087
+                        title: Кавказский Узел | Ника Гварамия вышел на свободу после восьми месяцев заключения
+                        source: Кавказский Узел GE
+                        publishedAt: "2026-02-13T11:21:24.392747+00:00"
+                        sentiment: -2
+                        stance: anti_russia
+                        relevanceScore: 1
+                        whyIncluded: "Слабо связано с сюжетом: Курс на интеграцию с ЕС"
+                    entities:
+                      - id: person:saakashvili
+                        label: Михаил Саакашвили
+                        kind: person
+                        relation: mentioned_in
+                        confidence: 0.84
+                        evidence: [article:201]
+                    events:
+                      - id: 302
+                        title: Саммит по визовой либерализации
+                        date: "2026-02-11"
+                        impact: high
+                    graphStats:
+                      nodes: 9
+                      edges: 13
+        "400":
+          description: Missing narrativeId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: narrativeId is required
+                code: bad_request
+        "404":
+          description: Narrative not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: not found
+
+  /api/analyst/brief:
+    get:
+      summary: Generate short analyst brief for a narrative
+      operationId: getAnalystBrief
+      parameters:
+        - in: query
+          name: narrativeId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Brief returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BriefResponse"
+              examples:
+                default:
+                  value:
+                    narrativeId: 2
+                    title: Курс на интеграцию с ЕС
+                    bullets:
+                      - "Сюжет: Курс на интеграцию с ЕС (active), расхождение 1%."
+                      - "Покрытие: 1438 материалов; в рабочем таймлайне 20 последних публикаций."
+                    generatedAt: "2026-02-13T22:03:05.565Z"
+        "400":
+          description: Missing narrativeId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: narrativeId is required
+                code: bad_request
+        "404":
+          description: Narrative not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: not found
+
+  /api/analyst/country:
+    get:
+      summary: Get country workspace timeline
+      operationId: getAnalystCountryWorkspace
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 3
+          description: ISO-like country code, e.g. KZ
+      responses:
+        "200":
+          description: Country workspace returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountryWorkspaceResponse"
+              examples:
+                default:
+                  value:
+                    country:
+                      id: KZ
+                      name: Казахстан
+                      flag: "🇰🇿"
+                      temperature: -11.44
+                      divergence: 2
+                      articleCount: 2015
+                      updatedAt: "2026-02-13T21:41:41.540564+00:00"
+                    timeline:
+                      - articleId: 700000
+                        title: "🚔 В Шымкенте осудили 18 участников транснациональной наркогруппировки"
+                        source: Informburo.kz TG
+                        publishedAt: "2026-02-13T16:17:17+00:00"
+                        sentiment: 1
+                        stance: pro_russia
+                        relevanceScore: 1
+                        whyIncluded: Материал страны KZ
+                    generatedAt: "2026-02-13T22:03:10.113Z"
+        "400":
+          description: Missing code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: code is required
+                code: bad_request
+        "404":
+          description: Country not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: not found
+
+  /api/analyst/entity:
+    get:
+      summary: Get cross-country entity timeline
+      operationId: getAnalystEntityWorkspace
+      parameters:
+        - in: query
+          name: entity
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Entity term to search in event titles
+        - in: query
+          name: countries
+          required: false
+          schema:
+            type: string
+          description: Comma-separated country codes, e.g. KZ,BY
+      responses:
+        "200":
+          description: Entity workspace returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntityWorkspaceResponse"
+              examples:
+                default:
+                  value:
+                    entity: Россия
+                    countries: [KZ, BY]
+                    timeline:
+                      - articleId: 980000
+                        title: Беларусь и Россия планируют создать селекционно-гибридные центры в АПК
+                        source: Совет Министров РБ
+                        publishedAt: "2022-06-29T00:00:00+00:00"
+                        sentiment: 2
+                        stance: pro_russia
+                        relevanceScore: 2
+                        whyIncluded: "Есть упоминание: Россия"
+                        countryCode: BY
+                    generatedAt: "2026-02-13T22:03:15.001Z"
+        "400":
+          description: Missing entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: entity is required
+                code: bad_request
+        "404":
+          description: Entity workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: not found
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+          description: Optional machine-readable error code (e.g. bad_request)
+      required: [error]
+
+    QualitySnapshot:
+      type: object
+      properties:
+        status:
+          type: string
+        entities:
+          type: integer
+        edges:
+          type: integer
+        aliasConflicts:
+          type: integer
+      required: [status, entities, edges, aliasConflicts]
+
+    TriageEscalation:
+      type: object
+      properties:
+        narrativeId:
+          type: integer
+        title:
+          type: string
+        divergence:
+          type: integer
+        status:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+      required: [narrativeId, title, divergence, status, countries]
+
+    TriageNewestItem:
+      type: object
+      properties:
+        narrativeId:
+          type: integer
+        title:
+          type: string
+        lastSeen:
+          type: string
+          format: date-time
+        articleCount:
+          type: integer
+      required: [narrativeId, title, lastSeen, articleCount]
+
+    TriageResponse:
+      type: object
+      properties:
+        escalations:
+          type: array
+          items:
+            $ref: "#/components/schemas/TriageEscalation"
+        newest:
+          type: array
+          items:
+            $ref: "#/components/schemas/TriageNewestItem"
+        quality:
+          $ref: "#/components/schemas/QualitySnapshot"
+        generatedAt:
+          type: string
+          format: date-time
+      required: [escalations, newest, quality, generatedAt]
+
+    CaseResponse:
+      type: object
+      properties:
+        narrative:
+          type: object
+          properties:
+            id: { type: integer }
+            title: { type: string }
+            status: { type: string }
+            divergence: { type: integer }
+            articleCount: { type: integer }
+            keywords:
+              type: array
+              items: { type: string }
+          required: [id, title, status, divergence, articleCount, keywords]
+        countries:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+            required: [id, label]
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              articleId: { type: integer }
+              title: { type: string }
+              source: { type: string }
+              publishedAt: { type: string, format: date-time }
+              sentiment: { type: number }
+              stance: { type: string }
+              relevanceScore: { type: number }
+              whyIncluded: { type: string }
+            required: [articleId, title, source, publishedAt, sentiment, stance]
+        entities:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              kind: { type: string }
+              relation: { type: string }
+              confidence: { type: number }
+              evidence:
+                type: array
+                items: { type: string }
+            required: [id, label, kind, relation, confidence, evidence]
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              title: { type: string }
+              date: { type: string }
+              impact: { type: string }
+            required: [id, title, date, impact]
+        graphStats:
+          type: object
+          properties:
+            nodes: { type: integer }
+            edges: { type: integer }
+          required: [nodes, edges]
+      required: [narrative, countries, timeline, entities, events, graphStats]
+
+    BriefResponse:
+      type: object
+      properties:
+        narrativeId: { type: integer }
+        title: { type: string }
+        bullets:
+          type: array
+          items: { type: string }
+        generatedAt:
+          type: string
+          format: date-time
+      required: [narrativeId, title, bullets, generatedAt]
+
+    CountryWorkspaceResponse:
+      type: object
+      properties:
+        country:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            flag: { type: string }
+            temperature:
+              oneOf:
+                - type: number
+                - type: "null"
+            divergence: { type: number }
+            articleCount: { type: integer }
+            updatedAt:
+              oneOf:
+                - type: string
+                  format: date-time
+                - type: "null"
+          required: [id, name, flag, temperature, divergence, articleCount, updatedAt]
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              articleId: { type: integer }
+              title: { type: string }
+              source: { type: string }
+              publishedAt: { type: string, format: date-time }
+              sentiment: { type: number }
+              stance: { type: string }
+              relevanceScore: { type: number }
+              whyIncluded: { type: string }
+            required: [articleId, title, source, publishedAt, sentiment, stance, relevanceScore, whyIncluded]
+        generatedAt:
+          type: string
+          format: date-time
+      required: [country, timeline, generatedAt]
+
+    EntityWorkspaceResponse:
+      type: object
+      properties:
+        entity: { type: string }
+        countries:
+          type: array
+          items: { type: string }
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              articleId: { type: integer }
+              title: { type: string }
+              source: { type: string }
+              publishedAt: { type: string, format: date-time }
+              sentiment: { type: number }
+              stance: { type: string }
+              relevanceScore: { type: number }
+              whyIncluded: { type: string }
+              countryCode: { type: string }
+            required: [articleId, title, source, publishedAt, sentiment, stance, relevanceScore, whyIncluded, countryCode]
+        generatedAt:
+          type: string
+          format: date-time
+      required: [entity, countries, timeline, generatedAt]
