@@ -13,6 +13,17 @@ const REASON_OPTIONS: Array<{ value: ValidationReasonCode; label: string }> = [
   { value: 'other', label: 'Другое' },
 ];
 
+const DECISION_OPTIONS = [
+  { value: 'core', label: 'Ядро (core)', hint: 'Статья прямо про этот сюжет' },
+  { value: 'context', label: 'Фон (context)', hint: 'Связанный фон, но не центр сюжета' },
+  { value: 'noise', label: 'Шум (noise)', hint: 'Не по теме, попало в тред случайно' },
+] as const;
+
+const SAME_THREAD_OPTIONS = [
+  { value: 'yes', label: 'Да (yes)' },
+  { value: 'no', label: 'Нет (no)' },
+] as const;
+
 type BatchResponse = {
   batchId: string;
   rows: ValidationRow[];
@@ -25,7 +36,8 @@ type BatchResponse = {
 };
 
 function storageKey(batchId: string) {
-  return `geolab.validation.${batchId}`;
+  // v2 key resets previous local answers and starts a clean round
+  return `geolab.validation.v2.${batchId}`;
 }
 
 function defaultAnswer(rowId: number): ValidationAnswer {
@@ -38,6 +50,14 @@ function defaultAnswer(rowId: number): ValidationAnswer {
     notes: '',
     updatedAt: new Date().toISOString(),
   };
+}
+
+function createInitialAnswers(rows: ValidationRow[]) {
+  const initial: Record<number, ValidationAnswer> = {};
+  for (const row of rows) {
+    initial[row.row_id] = defaultAnswer(row.row_id);
+  }
+  return initial;
 }
 
 function csvEscape(value: string | number) {
@@ -72,11 +92,7 @@ export default function ValidationAdminPage() {
           }
         }
 
-        const initial: Record<number, ValidationAnswer> = {};
-        for (const row of data.rows) {
-          initial[row.row_id] = defaultAnswer(row.row_id);
-        }
-        setAnswers(initial);
+        setAnswers(createInitialAnswers(data.rows));
       })
       .catch(() => setStatus('Не удалось загрузить batch.'));
   }, []);
@@ -109,6 +125,19 @@ export default function ValidationAdminPage() {
         updatedAt: new Date().toISOString(),
       },
     }));
+  }
+
+  function resetAnswers() {
+    if (!batch) return;
+    const ok = window.confirm('Стереть все ответы и начать сначала?');
+    if (!ok) return;
+
+    const fresh = createInitialAnswers(batch.rows);
+    setAnswers(fresh);
+    localStorage.removeItem(storageKey(batch.batchId));
+    localStorage.setItem(storageKey(batch.batchId), JSON.stringify(fresh));
+    setIndex(0);
+    setStatus('Все ответы очищены. Начинаем с нуля.');
   }
 
   function exportCsv() {
@@ -220,7 +249,7 @@ export default function ValidationAdminPage() {
       <div className="max-w-6xl mx-auto space-y-4">
         <header className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
           <h1 className="text-xl md:text-2xl font-semibold">GeoPulse · Validation Admin</h1>
-          <p className="text-zinc-400 mt-1">Проверка качества кластеров: core / context / noise.</p>
+          <p className="text-zinc-400 mt-1">Проверка качества кластеров простыми метками: Ядро / Фон / Шум.</p>
 
           <div className="mt-3 grid md:grid-cols-4 gap-3 text-sm">
             <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-3">
@@ -245,6 +274,12 @@ export default function ValidationAdminPage() {
             <div className="h-full bg-cyan-400" style={{ width: `${progress}%` }} />
           </div>
 
+          <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/60 p-3 text-sm space-y-1">
+            <div><span className="text-zinc-400">Ядро (core):</span> статья прямо про этот сюжет.</div>
+            <div><span className="text-zinc-400">Фон (context):</span> связанный контекст, но не центр сюжета.</div>
+            <div><span className="text-zinc-400">Шум (noise):</span> не по теме, попало в тред случайно.</div>
+          </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={exportCsv}
@@ -258,6 +293,12 @@ export default function ValidationAdminPage() {
               className="px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 hover:border-zinc-500 disabled:opacity-60"
             >
               {saving ? 'Сохраняю...' : 'Сохранить snapshot на сервер'}
+            </button>
+            <button
+              onClick={resetAnswers}
+              className="px-3 py-2 rounded-lg bg-rose-950/50 border border-rose-800 text-rose-200 hover:border-rose-600"
+            >
+              Стереть мои ответы и начать сначала
             </button>
             {status && <span className="text-sm text-zinc-400 self-center">{status}</span>}
           </div>
@@ -314,13 +355,14 @@ export default function ValidationAdminPage() {
               <div>
                 <div className="text-sm text-zinc-400 mb-2">1) Насколько статья про этот сюжет?</div>
                 <div className="flex gap-2 flex-wrap">
-                  {['core', 'context', 'noise'].map((value) => (
+                  {DECISION_OPTIONS.map((option) => (
                     <button
-                      key={value}
-                      onClick={() => updateAnswer({ validatorDecision: value as ValidationAnswer['validatorDecision'] })}
-                      className={`px-3 py-2 rounded border ${answer.validatorDecision === value ? 'border-cyan-400 bg-cyan-400/20' : 'border-zinc-700 hover:border-zinc-500'}`}
+                      key={option.value}
+                      onClick={() => updateAnswer({ validatorDecision: option.value as ValidationAnswer['validatorDecision'] })}
+                      className={`px-3 py-2 rounded border text-left ${answer.validatorDecision === option.value ? 'border-cyan-400 bg-cyan-400/20' : 'border-zinc-700 hover:border-zinc-500'}`}
                     >
-                      {value}
+                      <div>{option.label}</div>
+                      <div className="text-xs text-zinc-400">{option.hint}</div>
                     </button>
                   ))}
                 </div>
@@ -329,13 +371,13 @@ export default function ValidationAdminPage() {
               <div>
                 <div className="text-sm text-zinc-400 mb-2">2) Должна ли статья быть в этом треде?</div>
                 <div className="flex gap-2">
-                  {(['yes', 'no'] as const).map((value) => (
+                  {SAME_THREAD_OPTIONS.map((option) => (
                     <button
-                      key={value}
-                      onClick={() => updateAnswer({ sameThread: value })}
-                      className={`px-3 py-2 rounded border ${answer.sameThread === value ? 'border-cyan-400 bg-cyan-400/20' : 'border-zinc-700 hover:border-zinc-500'}`}
+                      key={option.value}
+                      onClick={() => updateAnswer({ sameThread: option.value })}
+                      className={`px-3 py-2 rounded border ${answer.sameThread === option.value ? 'border-cyan-400 bg-cyan-400/20' : 'border-zinc-700 hover:border-zinc-500'}`}
                     >
-                      {value}
+                      {option.label}
                     </button>
                   ))}
                 </div>
