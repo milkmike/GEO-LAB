@@ -219,6 +219,13 @@ export default function Home() {
           <p className="t-meta text-zinc-500">Панель геополитики простыми словами</p>
         </div>
         <div className="ml-auto flex items-center gap-3 t-meta text-zinc-500">
+          <a
+            href="/admin/validation"
+            className="px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+            title="Открыть ручную валидацию качества"
+          >
+            🧪 Валидация данных
+          </a>
           {state.focus && (
             <button
               onClick={() => setLeftCollapsed((v) => !v)}
