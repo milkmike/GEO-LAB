@@ -50,6 +50,7 @@ export interface CaseResponse {
 export interface BriefResponse {
   narrativeId: number;
   title: string;
+  windowHours: 24 | 72;
   bullets: string[];
   generatedAt: string;
 }

@@ -2,6 +2,61 @@
 
 All notable changes to GEO-LAB are documented here.
 
+## [Wave-3 S5-CODE Signals Layer] - 2026-02-14
+
+### Added
+- Rule-based explainable signal engine (`src/lib/analyst/signals.ts`) with:
+  - Forecast v1 (country/narrative/entity)
+  - Alerts v1 (spikes, new clusters, sentiment shift, novel entities)
+  - Trust scoring (text + graph features + rationale)
+  - Briefing builder (24h/72h window)
+- New analyst endpoints:
+  - `GET /api/analyst/forecast`
+  - `GET /api/analyst/alerts`
+  - `GET /api/analyst/trust`
+  - `GET /api/analyst/briefing`
+- Query helper for `windowHours=24|72` in analyst request parser.
+
+### Changed
+- README examples expanded with Wave-3 signal layer curl calls.
+- Temporal orchestration contains a stubbed metrics sink (`recordRetrievalMetric`) to keep type safety until observability hookup.
+
+### Notes
+- Signal outputs preserve explainability fields (`whyIncluded`, `relevanceScore`, `confidence`, `evidence`) in forecast/alerts/trust payloads.
+
+## [Wave-3 S6-REL Launch Closure] - 2026-02-14
+
+### Added
+- Wave-3/S6 launch closure docs:
+  - `docs/release/wave-3-s6-go-live-checklist.md`
+  - `docs/release/wave-3-s6-rollback-monitoring-plan.md`
+  - `docs/release/wave-3-s6-release-note-draft.md`
+  - `docs/release/wave-3-s6-merge-checklist.md`
+
+### Changed
+- Release package now includes explicit go/no-go merge criteria, rollback drill requirements, and first-24h monitoring cadence.
+
+### Notes
+- Focus is launch readiness and operational closure for integrated analyst + graph API state.
+- No schema/data migration introduced by this closure package.
+
+## [Wave-3 S5-REL Signal Layer Release/Docs] - 2026-02-14
+
+### Added
+- Signal-layer release docs package:
+  - `docs/release/wave-3-s5-pr-summary.md`
+  - `docs/release/wave-3-s5-operator-guide.md`
+  - `docs/release/wave-3-s5-verification-rollback.md`
+  - `docs/release/wave-3-s5-known-risks.md`
+
+### Changed
+- Release package now formalizes operator interpretation for forecast/alerts/trust.
+- Verification/rollback guidance extended with temporal QA smoke and explainability checks.
+
+### Notes
+- S5 scope is release/docs closure for existing signal-layer behavior.
+- No schema/data migration required.
+
 ## [Wave-2 S3-REL Release/Docs Closure] - 2026-02-14
 
 ### Added

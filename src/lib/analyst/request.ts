@@ -60,3 +60,13 @@ export function getOptionalString(request: NextRequest, paramName: string): stri
   const value = String(request.nextUrl.searchParams.get(paramName) || '').trim();
   return value || undefined;
 }
+
+export function getWindowHours(request: NextRequest, paramName = 'windowHours', fallback: 24 | 72 = 24): 24 | 72 {
+  const raw = String(request.nextUrl.searchParams.get(paramName) || '').trim();
+  if (!raw) return fallback;
+
+  const hours = Number(raw);
+  if (hours === 24 || hours === 72) return hours;
+
+  throw badRequest(`${paramName} must be 24 or 72`);
+}

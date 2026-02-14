@@ -503,24 +503,34 @@ export async function explainAnalystItem(params: ExplainScopeParams) {
   return { error: 'provide articleId or nodeId+relatedNodeId' };
 }
 
-export async function generateBrief(narrativeId: number): Promise<BriefResponse | null> {
+export async function generateBrief(narrativeId: number, windowHours: 24 | 72 = 24): Promise<BriefResponse | null> {
   const ws = await getCaseWorkspace(narrativeId);
   if (!ws) return null;
 
-  const topSources = Array.from(new Set(ws.timeline.map((t) => t.source))).slice(0, 4);
+  const latestTs = ws.timeline[0] ? +new Date(ws.timeline[0].publishedAt) : Date.now();
+  const fromTs = latestTs - (windowHours * 60 * 60 * 1000);
+  const windowTimeline = ws.timeline.filter((item) => {
+    const ts = +new Date(item.publishedAt);
+    return Number.isFinite(ts) && ts >= fromTs && ts <= latestTs;
+  });
+
+  const scopedTimeline = windowTimeline.length ? windowTimeline : ws.timeline;
+
+  const topSources = Array.from(new Set(scopedTimeline.map((t) => t.source))).slice(0, 4);
   const topEntities = ws.entities.slice(0, 4).map((e) => e.label);
-  const negativeCount = ws.timeline.filter((t) => t.sentiment < -0.2).length;
+  const negativeCount = scopedTimeline.filter((t) => t.sentiment < -0.2).length;
 
   return {
     narrativeId,
     title: ws.narrative.title,
+    windowHours,
     bullets: [
       `Сюжет: ${ws.narrative.title} (${ws.narrative.status}), расхождение ${ws.narrative.divergence}%.`,
-      `Покрытие: ${ws.narrative.articleCount} материалов; в рабочем таймлайне ${ws.timeline.length} последних публикаций.`,
+      `Покрытие: ${ws.narrative.articleCount} материалов; в окне ${windowHours}ч — ${scopedTimeline.length} публикаций.`,
       `География: ${ws.countries.map((c) => c.label).join(', ')}.`,
       `Ключевые сущности: ${topEntities.join(', ') || 'н/д'}.`,
       `Источники ядра: ${topSources.join(', ') || 'н/д'}.`,
-      `Тональность: негативных публикаций ${negativeCount}/${ws.timeline.length}.`,
+      `Тональность: негативных публикаций ${negativeCount}/${scopedTimeline.length}.`,
       `Граф-контекст: ${ws.graphStats.nodes} узлов и ${ws.graphStats.edges} связей в подграфе кейса.`,
     ],
     generatedAt: new Date().toISOString(),
