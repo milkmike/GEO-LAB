@@ -1,3 +1,5 @@
+import { recordFreshnessMetric } from '@/lib/monitoring/metrics';
+
 const GEOPULSE_BASE = process.env.GEOPULSE_API_BASE_URL || 'https://massaraksh.tech';
 
 export type LiveCountry = {
@@ -52,6 +54,12 @@ export async function loadCountryMap(days = 14): Promise<Map<string, LiveCountry
   for (const c of payload.countries) {
     map.set(c.code, c);
   }
+
+  recordFreshnessMetric({
+    key: 'geopulse.countries.last_updated',
+    timestamps: payload.countries.map((c) => c.last_updated),
+    staleAfterHours: 48,
+  });
 
   return map;
 }

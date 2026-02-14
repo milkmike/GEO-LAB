@@ -49,3 +49,30 @@ export const TEMPORAL_SCORING = {
     vectorWhy: 0.35,
   },
 } as const;
+
+export const TEMPORAL_RULES = {
+  vectorDimensions: 64,
+  graph: {
+    centralityDegreeNormalization: 8,
+    entityCoverageNormalization: 3,
+  },
+  freshness: {
+    day1: 1,
+    week1: 0.85,
+    month1: 0.65,
+    older: 0.45,
+  },
+  windows: {
+    shortRangeDays: 10,
+    recentSliceDays: 7,
+    recentWeight: 1.1,
+    baselineWeight: 0.9,
+  },
+  limits: {
+    defaultTimelineLimit: 120,
+  },
+  confidence: {
+    floor: 0.35,
+    ceil: 0.99,
+  },
+} as const;

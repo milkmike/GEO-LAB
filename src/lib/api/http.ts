@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { applyApiObservability } from '@/lib/api/observability';
+import { recordApiMetric } from '@/lib/monitoring/metrics';
 
 export type ApiErrorCode =
   | 'bad_request'
@@ -92,22 +94,61 @@ export function apiError(error: unknown): NextResponse<ApiErrorResponse> {
   );
 }
 
+function routeToOperation(route: string): string {
+  return route
+    .replace(/^\/+/, '')
+    .replace(/\?.*$/, '')
+    .replace(/\//g, '.')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .toLowerCase() || 'api.unknown';
+}
+
+function observeAndReturn<T>(response: NextResponse<T>, startedAtMs: number, route: string): NextResponse<T> {
+  const operation = routeToOperation(route);
+  const latencyMs = Date.now() - startedAtMs;
+
+  recordApiMetric({
+    route,
+    operation,
+    status: response.status,
+    latencyMs,
+  });
+
+  return applyApiObservability(response, {
+    operation,
+    outcome: response.status >= 400 ? 'error' : 'ok',
+    startedAtMs,
+  });
+}
+
 export function withApiErrorHandling<T>(handler: (request: NextRequest) => Promise<NextResponse<T>> | NextResponse<T>) {
   return async function route(request: NextRequest): Promise<NextResponse<T | ApiErrorResponse>> {
+    const startedAtMs = Date.now();
+    const routeId = request.nextUrl.pathname;
+
     try {
-      return await handler(request);
+      const response = await handler(request);
+      return observeAndReturn(response, startedAtMs, routeId);
     } catch (error) {
-      return apiError(error);
+      const response = apiError(error);
+      return observeAndReturn(response, startedAtMs, routeId);
     }
   };
 }
 
-export function withApiErrorHandlingNoRequest<T>(handler: () => Promise<NextResponse<T>> | NextResponse<T>) {
+export function withApiErrorHandlingNoRequest<T>(
+  handler: () => Promise<NextResponse<T>> | NextResponse<T>,
+  routeId = 'internal/no-request',
+) {
   return async function route(): Promise<NextResponse<T | ApiErrorResponse>> {
+    const startedAtMs = Date.now();
+
     try {
-      return await handler();
+      const response = await handler();
+      return observeAndReturn(response, startedAtMs, routeId);
     } catch (error) {
-      return apiError(error);
+      const response = apiError(error);
+      return observeAndReturn(response, startedAtMs, routeId);
     }
   };
 }

@@ -1,4 +1,5 @@
 {
   "validate": ["lint", "typecheck", "test"],
-  "release": ["lint", "typecheck", "test", "build"]
+  "release": ["lint", "typecheck", "test", "build"],
+  "s6-readiness": ["eval:harness", "test:regression", "report:release-readiness"]
 }

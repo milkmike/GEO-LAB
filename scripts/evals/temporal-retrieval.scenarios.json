@@ -1,0 +1,60 @@
+{
+  "meta": {
+    "description": "Dynamic temporal/retrieval quality scenarios for analyst entity workspace"
+  },
+  "scenarios": [
+    {
+      "id": "entity_baseline",
+      "query": "Газпром",
+      "countries": ["KZ", "UZ", "AM"],
+      "expected": {
+        "minResults": 10,
+        "maxFreshnessHoursP95": 720
+      }
+    },
+    {
+      "id": "entity_recent_24h",
+      "query": "Газпром за последние 24 часа",
+      "countries": ["KZ", "UZ", "AM"],
+      "expected": {
+        "minResults": 4,
+        "maxFreshnessHoursP95": 240,
+        "minOverlapAgainst": {
+          "scenarioId": "entity_baseline",
+          "at": 20,
+          "value": 0.25
+        }
+      }
+    },
+    {
+      "id": "entity_conflict_time",
+      "query": "Газпром вчера в 2024 году сейчас",
+      "countries": ["KZ", "UZ"],
+      "expected": {
+        "minResults": 4,
+        "minOverlapAgainst": {
+          "scenarioId": "entity_baseline",
+          "at": 20,
+          "value": 0.2
+        }
+      }
+    },
+    {
+      "id": "entity_noise_robustness",
+      "query": "СРОЧНО!!! Газпром транзит шум мемы котики 12345",
+      "countries": ["KZ", "UZ"],
+      "expected": {
+        "minResults": 4,
+        "minOverlapAgainst": {
+          "scenarioId": "entity_baseline",
+          "at": 20,
+          "value": 0.2
+        }
+      }
+    }
+  ],
+  "gates": {
+    "maxP95LatencyMs": 3000,
+    "maxHttpErrorRate": 0
+  }
+}

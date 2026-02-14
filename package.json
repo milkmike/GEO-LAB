@@ -15,6 +15,9 @@
     "ci:validate": "node scripts/ci/run-task-group.js validate",
     "ci:release": "node scripts/ci/run-task-group.js release",
     "benchmark:retrieval": "node scripts/benchmark-retrieval.js",
+    "eval:harness": "node scripts/eval-harness.mjs",
+    "test:regression": "node scripts/regression-analyst-flows.mjs",
+    "report:release-readiness": "node scripts/release-readiness-report.mjs",
     "release": "npm run ci:release"
   },
   "dependencies": {

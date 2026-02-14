@@ -1,6 +1,5 @@
 import type { Article } from '@/types/ontology';
-import { STANCE_THRESHOLDS } from '@/lib/analyst/config/scoring';
-import type { TimelineItem } from '@/lib/timeline/engine';
+import { stanceFromSentiment, type TimelineItem } from '@/lib/timeline/engine';
 
 export type TimelineSeed = {
   articleId: number;
@@ -51,11 +50,7 @@ export function serializeEntityTimelineItem(
 
   return {
     ...item,
-    stance: sentiment > STANCE_THRESHOLDS.proRussia
-      ? 'pro_russia'
-      : sentiment < STANCE_THRESHOLDS.antiRussia
-        ? 'anti_russia'
-        : 'neutral',
+    stance: stanceFromSentiment(sentiment),
     relevanceScore,
     whyIncluded: `Есть упоминание: ${cleanEntity}`,
     confidence,

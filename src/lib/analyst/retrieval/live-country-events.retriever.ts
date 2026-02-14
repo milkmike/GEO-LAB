@@ -1,5 +1,6 @@
 import { fetchJSON, type LiveCountryEventsResponse } from '@/lib/analyst/retrieval/geopulse.client';
 import type { Retriever } from '@/lib/analyst/retrieval/strategies';
+import { recordFreshnessMetric } from '@/lib/monitoring/metrics';
 
 export type RetrievedLiveEvent = {
   title: string;
@@ -22,6 +23,7 @@ export class GeoPulseCountryEventsRetriever implements Retriever<LiveEventsQuery
     );
 
     const events: RetrievedLiveEvent[] = [];
+    const freshnessTimestamps: string[] = [];
 
     for (let idx = 0; idx < query.countryCodes.length; idx += 1) {
       const countryCode = query.countryCodes[idx];
@@ -29,6 +31,7 @@ export class GeoPulseCountryEventsRetriever implements Retriever<LiveEventsQuery
 
       for (const event of countryEvents) {
         if (!event.title || !event.published_at) continue;
+        freshnessTimestamps.push(event.published_at);
 
         events.push({
           title: event.title,
@@ -39,6 +42,12 @@ export class GeoPulseCountryEventsRetriever implements Retriever<LiveEventsQuery
         });
       }
     }
+
+    recordFreshnessMetric({
+      key: `geopulse.events.${query.sort}`,
+      timestamps: freshnessTimestamps,
+      staleAfterHours: 72,
+    });
 
     return events;
   }

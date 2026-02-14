@@ -1,31 +1,6 @@
 import type { NeighborsResponse, SubgraphResponse } from './types';
 import type { GraphFocus } from '@/types/ontology';
-
-type MaybeApiError = {
-  error?: string;
-  code?: string;
-};
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { cache: 'no-store' });
-
-  if (!res.ok) {
-    let message = `${res.status}`;
-
-    try {
-      const payload = (await res.json()) as MaybeApiError;
-      if (payload.error) {
-        message = payload.code ? `${payload.error} (${payload.code})` : payload.error;
-      }
-    } catch {
-      // no-op
-    }
-
-    throw new Error(message);
-  }
-
-  return res.json() as Promise<T>;
-}
+import { fetchJsonNoStore } from '@/lib/api/fetch-json';
 
 export function focusToGraphNodeId(focus: GraphFocus): string {
   switch (focus.nodeType) {
@@ -49,13 +24,13 @@ export function focusToGraphNodeId(focus: GraphFocus): string {
 }
 
 export async function fetchNeighbors(nodeId: string): Promise<NeighborsResponse> {
-  return fetchJson<NeighborsResponse>(`/api/graph/neighbors?nodeId=${encodeURIComponent(nodeId)}`);
+  return fetchJsonNoStore(`/api/graph/neighbors?nodeId=${encodeURIComponent(nodeId)}`);
 }
 
 export async function fetchSubgraph(nodeId: string, depth = 2): Promise<SubgraphResponse> {
-  return fetchJson<SubgraphResponse>(`/api/graph/subgraph?nodeId=${encodeURIComponent(nodeId)}&depth=${depth}`);
+  return fetchJsonNoStore(`/api/graph/subgraph?nodeId=${encodeURIComponent(nodeId)}&depth=${depth}`);
 }
 
 export async function fetchGraphHealth(): Promise<{ status: string; entities: number; edges: number }> {
-  return fetchJson<{ status: string; entities: number; edges: number }>('/api/admin/graph-health');
+  return fetchJsonNoStore('/api/admin/graph-health');
 }
